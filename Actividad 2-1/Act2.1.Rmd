@@ -1,0 +1,49 @@
+---
+title: 'Actividad 2.1. Regresión lineal simple: Método de mínimos cuadrados'
+author: "Raúl Correa Ocañas"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# 0. Importación de los Datos
+
+```{r}
+df <- read.csv(r"(..\data\mc-donalds-menu.csv)")
+df <- data.frame(df)
+```
+
+# 1. Análisis Exploratorio
+
+```{r}
+head(df, n = 3)
+```
+
+```{r}
+names(df)
+```
+
+```{r}
+summary(df$Protein)
+boxplot(df$Protein, horizontal = TRUE)
+hist(df$Protein, breaks = seq(from=min(df$Protein), to=max(df$Protein)+5, by=5))
+```
+
+```{r}
+seq(from=min(df$Protein), to=max(df$Protein), by=5)
+```
+
+# 2. Método de Mínimos Cuadrados
+
+# 3. Regresión lineal en R
+
+# 4. Representación Gráfica
+
+# 5. Coeficiente de Determinación
+
+# 6. Validación del Modelo
+
+# **7. Conclusiones**
