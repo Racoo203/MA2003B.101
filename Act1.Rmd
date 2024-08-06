@@ -1,0 +1,90 @@
+---
+title: 'Actividad 1.1: Matrices y Estadística'
+author: "Raúl Correa Ocañas"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Problema 1
+
+```{r}
+library(matlib)
+
+A = matrix(c(2,0,9,4,-2,0,-3,5,6), nrow = 3, ncol = 3) 
+ 
+B = matrix(c(8,-7,-3,6,9,5,-2,-5,1), nrow = 3, ncol = 3)
+
+# 1a)
+print(A+B)
+# 1b)
+print(4*A + 3*B)
+# 1c)
+print(t(A))
+# 1d)
+print(inv(A))
+# 1e)
+print(det(A))
+# 1f)
+print(det(t(A)))
+```
+# Problema 2
+
+```{r}
+A = matrix(c(2,3,4,1,0,5,3,-2,0,-3,-1,-5), nrow = 3, ncol = 4)
+
+B = matrix(c(4,-3,5,8,2,1,-2,0), nrow = 4, ncol = 2)
+
+result = A %*% B
+
+print(result)
+```
+
+# Problema 3
+
+```{r}
+
+df = read.csv("mc-donalds-menu.csv", header = TRUE)
+
+df = df[c("Calories", "Protein", "Carbohydrates", "Sugars")]
+
+df = data.frame(df)
+
+# 3a)
+print(colMeans(df))
+
+# 3b)
+print(cov(df))
+
+# 3c)
+print(cor(df))
+
+# 3d)
+
+print(eigen(cov(df))$values)
+print(eigen(cov(df))$vectors)
+print(eigen(cor(df))$values)
+print(eigen(cor(df))$vectors)
+
+```
+
+# Semejanzas y Diferencias en los Vectores Propios y Valores Propios
+
+Las semejanzas consisten principalmente en que los dos sets de eigenvectores indican las direcciones principales de varianza para cada matriz. Las diferencias se basan en las unidades en las que interpretamos esta varianza. En el caso de la matriz de covarianza, se tienen las unidades originales de los datos, mientras que la matriz de correlación estandariza las variables, eliminando las diferencias de escala entre ellas.
+
+Adicionalmente, los valores propios indicarían el resumen de cada matriz a lo largo de sus direcciones principales. Es decir,
+
+```{r}
+print(eigen(cov(df))$values)
+```
+
+Estos valores representan las covarianzas de los datos de cada dirección principal de la matriz de covarianza. Por otro lado, 
+
+```{r}
+print(eigen(cor(df))$values)
+```
+
+Estos valores representan la correlación de los datos presentes en cada dirección principal de la matriz de correlación.
