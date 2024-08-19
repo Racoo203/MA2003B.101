@@ -5,10 +5,18 @@ date: "`r Sys.Date()`"
 output: html_document
 ---
 
+```{r}
+# install.packages("FactoMineR")
+```
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(dplyr)
 library(reshape2)
+library(stats)
+library(FactoMineR)
+library(ggplot2)
+library(factoextra)
 ```
 
 # IMPORTACION DE DATOS
@@ -16,7 +24,7 @@ library(reshape2)
 ```{r}
 data_path = "../data/paises_mundo.csv"
 df = read.csv(data_path)
-df
+scaled_df = scale(df)
 ```
 
 # PARTE I
@@ -46,18 +54,19 @@ Los primeros dos explican el 99.99% de la variación de los datos, por lo que se
 *Escriba la ecuación de la combinación lineal de los Componentes principales CP1 y CP2. ¿Qué variables son las que más contribuyen a la primera y segunda componentes principales? (observe los coeficientes en valor absoluto de las combinaciones lineales). Justifique su respuesta.*
 
 ```{r}
-eigen_cov_df$vectors[1,]
-eigen_cov_df$vectors[2,]
+eigen_cov_df$vectors[,c(1,2)]
 ```
 
-$$
+$PC_1 = V_1^TX$ y $PC_2 = V_2^TX$ donde X es el vector de variables y $V_n$ es el n-ésimo vector propio.
 
-$$
+Para el primer componente principal, las variables 4, 5, y 10 fueron las que más contribuyeron a la variación a lo largo de este eje. Por otro lado, el segundo componente principal tiene como variables con mayor contribución la 4, 5, y 7. Se puede argumentar que estas son las variables con mayor contribución ya que sus magnitudes son las mayores a comparación al resto. Las variables 4 y 5 tienen un orden de $10^{-1}$, y las variables 10 y 7 tienen un orden de $10^{-3}$. El resto pueden llegar a ser hasta ordenes de exponente -7, las cuales sabemos que no contribuyen de la misma forma al resultado como los previamente explorados.
+
+Con esto podemos inferir que las variables de PNB95 (Var. 4), ProdElec (Var. 5), ConsEner (Var. 10) y ConsAgua (Var. 7) son aquellas que mejor explican la variación de los datos.
 
 ## 2. Análisis de Matriz de Correlación
 
 ```{r}
-cor_df = cor(df)
+cor_df = cor(scaled_df)
 eigen_cor_df = eigen(cor_df)
 ```
 
@@ -71,3 +80,116 @@ sum(eigen_cor_df$values)
 sum(diag(cor_df))
 cumsum(eigen_cor_df$values / sum(eigen_cor_df$values))
 ```
+
+*Según los resultados anteriores, ¿qué componentes son los más importantes?*
+
+En esta ocasión, los primeros 8 componentes explican el 96.5% de la variación de los datos. Esta vez ha sido más complicado reducir la dimensionalidad de los datos basandose en la correlación de estos mismos.
+
+*Escriba la ecuación de la combinación lineal de los Componentes principales CP1 y CP2. ¿Qué variables son las que más contribuyen a la primera y segunda componentes principales? (observe los coeficientes en valor absoluto de las combinaciones lineales). Justifique su respuesta.*
+
+```{r}
+eigen_cor_df$vectors[,c(1,2)]
+```
+
+$PC_1 = V_1^TX$ y $PC_2 = V_2^TX$ donde X es el vector de variables y $V_n$ es el n-ésimo vector propio.
+
+Para el primer componente principal, las variables 6, 2, y 10 fueron las que más contribuyeron a la variación a lo largo de este eje. Por otro lado, el segundo componente principal tiene como variables con mayor contribución la 3, 1, y 8. A diferencia de los resultados obtenidos al hacer el análisis sobre la matriz de covarianzas, cada coeficiente en sus respectivas combinaciones lineales están más distribuidos sobre todas las variables. Es decir, en la matriz de covarianzas dos variables podrían representar el 99.99% de los datos, mientras en el análisis de correlacion es necesario utilizar 8 para 96%.
+
+Con esto podemos inferir que las variables asociadas en el primer componente principal están más correlacionadas entre si, unicamente las variables 8 (PropBosq), 2 (MortInf) y 6 (LinTelf) son las que menos influyen en los componentes principales de la matriz de correlación.
+
+## 3. Conclusiones
+
+En términos de reducción de dimensionalidad y simplificación de los datos, el análisis de la matriz de covarianza es mejor, ya que permite capturar casi toda la variación de los datos con solo dos componentes principales. Sin embargo, este análisis se hizo sin estandarizar las variables, por lo que existe un sesgo por parte de la magnitud de las covarianzas si el orden de unas variables son considerablemente más grandes que el resto. Por otro lado, un análisis de vectores propios para la matriz de correlación permite un mejor análisis de la relación entre los datos, ya que su analisis no se sesga con la magnitud de la varianza.
+
+# PARTE II
+
+```{r}
+cpS=princomp(df,cor=FALSE)
+cpaS=as.matrix(df)%*%cpS$loadings
+
+plot(cpaS[,1:2],type="p", main = "PCA en S")
+text(cpaS[,1],cpaS[,2],1:nrow(cpaS))
+biplot(cpS)
+```
+
+En estos gráficos podemos observar como las variables PNB95 y ProdElec tienen un gran peso sobre los dos componentes principales graficados. Datos que están numericamente más cercanos unos a otros tienen puntuaciones similares, y por lo tanto se observa que los datos atípicos afectan con fuerza la variación de los datos. Esto implica que es probable que existan datos atípicos en las dos variables previamente mencionadas que afecten el análisis.
+
+```{r}
+cpR=princomp(df,cor=TRUE)
+cpaR=as.matrix(df)%*%cpR$loadings
+
+plot(cpaR[,1:2],type="p", main = "PCA en R")
+text(cpaR[,1],cpaR[,2],1:nrow(cpaR))
+biplot(cpR)
+```
+
+En este caso, se observa una relación lineal entre el componente 1 y componente 2. Hay una gran concentración de valores tendiendo hacia la esquina superior derecha, contando con algunos datos atipicos tendiendo hacia la esquina inferior izquierda. Nuevamente, el valor de las variables afecta significativamente según su valor en scoring tanto para el componente 1 y componente 2. También se observa que ahora todas las variables contribuyen aproximadamente lo mismo para la explicación de la variación de los datos.
+
+```{r}
+summary(cpR)
+cpR$loadings
+cpR$scores
+```
+
+Usando el comando summary en el análisis de componentes principales sobre la matriz de correlaciones, se obtiene de manera automatizada los hallazgos de la parte 1. La matriz de loadings nos permite encontrar que variables y coeficientes son los utilizados para llegar a cada combinacion lineal correspondiente a cada componente principal. La tabla de scoring permite encontrar cuanto se evalúa cada componente para las variables de cada registro.
+
+# PARTE III
+
+```{r}
+cpS = PCA(df, scale.unit=FALSE)
+
+fviz_pca_ind(cpS, col.ind = "blue", addEllipses = TRUE, repel = FALSE)
+fviz_pca_var(cpS, col.var = "red", addEllipses = TRUE, repel = TRUE)
+fviz_screeplot(cpS)
+fviz_contrib(cpS, choice = c("var"))
+```
+
+El primer gráfico muestra las proyecciones de los datos sobre los ejes principales 1 y 2 sobre la matriz de covarianzas. Se puede observar que la gran mayoria de los datos estan en los cuadrantes 2 y 3, y se tienen algunos datos más esparsos hacia la derecha. Observando la magnitud del eje de la dimension 1, hace sentido que represente el 90% de la variabilidad. El segundo gráfico afirma que hay dos variables que están sesgando la variabilidad de los datos, probablemente por la magnitud de estos mismos. El resto parecen ser de magnitudes similares y en direcciones relativamente distintas.
+
+El tercer gráfico es el mismo que el primero con una elipse que contendría el 95% de los datos en el caso de que se asemeje a una distribución normal. Lo mismo ocurre para la gráfica cuatro, donde la elipse contiene el 95% de las variables modeladas.
+
+Las gráficas cinco y seis muestran la contribución de la explicación de la variabilidad por componente principal y la contribución por componente por cada variable. Se observa nuevamente que los primeros dos componentes aportan la mayor contribución, mientras que las primeras dos variables son las que más contribuyen al componente 1.
+
+```{r}
+cpR = PCA(df, scale.unit=TRUE)
+
+fviz_pca_ind(cpR, col.ind = "blue", addEllipses = TRUE, repel = FALSE)
+fviz_pca_var(cpR, col.var = "red", addEllipses = TRUE, repel = TRUE)
+fviz_screeplot(cpR)
+fviz_contrib(cpR, choice = c("var"))
+```
+
+El primer gráfico muestra las proyecciones de los datos sobre los ejes principales 1 y 2 sobre la matriz de correlación. A comparación al gráfico hecho con la matriz de covarianzas, los datos están mejor distribuidos sobre los cuadrantes. Se puede seguir observando casos muy puntuales de datos atípicos, pero su efecto es menor sobre la forma en la que se resume el comportamiento general de los datos
+
+El tercer gráfico es el mismo que el primero con una elipse que contendría el 95% de los datos en el caso de que se asemeje a una distribución normal. Lo mismo ocurre para la gráfica cuatro, donde la elipse contiene el 95% de las variables modeladas.
+
+Las gráficas cinco y seis muestran la contribución de la explicación de la variabilidad por componente principal y la contribución por componente por cada variable. En este caso las variables están mejor distribuidas, siendo necesario más variables y componentes para explicar la variación y aportación para el componente 1.
+
+# PARTE IV
+
+*Compare los resultados obtenidos con la matriz de varianza-covarianza y con la correlación . ¿Qué concluye? ¿Cuál de los dos procedimientos aporta componentes con de mayor interés?*
+
+El método de PCA sobre la matriz de covarianza captura casi toda la variabilidad de los datos con solo dos componentes principales. Sin embargo, este análisis puede estar sesgado si las variables tienen diferentes escalas, ya que la covarianza se ve afectada por la magnitud de las variables. Cuando se trabaja con la matriz de correlación, se pueden tener resultados más adecuados ya que la correlación ya estandariza las variables y permite una comparación de una misma escala. No disminuye la dimensionalidad de la misma forma, pero permite un análisis más concreto de las variables.
+
+*Indique cuál de los dos análisis (a partir de la matriz de varianza y covarianza o de correlación) resulta mejor para los datos indicadores económicos y sociales del 96 países en el mundo. Comparar los resultados y argumentar cuál es mejor según los resultados obtenidos.*
+
+En este caso, la matriz de correlación es más apropiada para analizar los datos de indicadores económicos y sociales, ya que asegura que las variables están en una escala comparable.
+
+*¿Qué variables son las que más contribuyen a la primera y segunda componentes principales del método seleccionado? (observa los coeficientes en valor absoluto de las combinaciones lineales, auxíliate también de los gráficos)*
+
+PC1) Línea telefónica, Consumo de Energía per Cápita, Mortalidad Infantil, Emisiones de CO2, Crecimiento de Poblacion.
+
+PC2) Porcentaje de Mujeres, Proporción de Bosques, Crecimiento de Población, Emisiones de CO2, Consumo de Energía.
+
+*Escriba las combinaciones finales que se recomiendan para hacer el análisis de componentes principales.*
+
+```{r}
+cpR=princomp(df,cor=TRUE)
+cpR$loadings[,c(1,2)]
+```
+
+*Interpreta los resultados en término de agrupación de variables (puede ayudar "índice de riqueza", "índice de ruralidad", etc)*
+
+El primer componente podría estar resumiendo desarrollo económico, ya que variables como el consumo de energía per cápita, el número de líneas telefónicas, y las emisiones de CO2 son indicativos de desarrollo industrial y económico. La mortalidad infantil también refleja el nivel de desarrollo, ya que una mayor mortalidad infantil suele asociarse con un menor desarrollo.
+
+El segundo componente podría estar relacionado con la sostenibilidad ambiental. La proporción de bosques y el crecimiento de la población indican factores ambientales y demográficos. Este componente parece capturar la relación entre desarrollo y sostenibilidad, donde un alto porcentaje de bosques y un menor consumo de energía podrían indicar países más rurales o con políticas más sostenibles.
