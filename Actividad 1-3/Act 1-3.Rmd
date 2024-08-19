@@ -1,0 +1,477 @@
+---
+title: "Actividad 1.3 Normalidad univariada. Transformaciones para normalidad"
+author: "Raúl Correa Ocañas"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# install.packages('nortest')
+# install.packages('moments')
+
+
+library(nortest)
+library(moments)
+library(e1071)
+```
+
+# Actividad 1.2
+
+```{r}
+library(ggplot2)
+
+ggplot(cars, aes(x=dist, y=speed)) + 
+    geom_point()
+```
+
+## 1. Prueba de Normalidad Univariada
+
+```{r}
+# Rapidez
+shapiro.test(cars$speed)
+ad.test(cars$speed)
+lillie.test(cars$speed)
+jarque.test(cars$speed)
+```
+
+Según los resultados obtenidos para las pruebas de normalidad de los datos para la variable de rapidez, todas las hipotesis nulas son aceptadas. Por lo tanto, no se tiene suficiente evidencia estadistica para negar que la distribución es normal.
+
+```{r}
+# Distancia
+shapiro.test(cars$dist)
+ad.test(cars$dist)
+lillie.test(cars$dist)
+jarque.test(cars$dist)
+```
+
+Por otro lado, las mismas pruebas de normalidad sobre la distribución de la distancia indican que se rechaza la hipotesis nula. Por lo tanto, se tiene suficiente evidencia estadistica para afirmar que la distribución de los datos no es normal.
+
+## 2. QQPlot
+
+```{r}
+qqnorm(cars$speed, main = "Rapidez")
+qqline(cars$speed)
+
+qqnorm(cars$dist, main = "Distancia")
+qqline(cars$dist)
+
+```
+
+Se observa que los puntos se apegan cercanamente a la linea que representan los cuartiles teóricos para el caso de la rapidez, lo cual reafirma los resultados obtenidos con las pruebas estadísticas de normalidad. La curtosis negativa no es muy evidente, mas si está presente a partir de la primera desviación estandar hacia la derecha. En el caso de los datos de la distancia, es clara la presencia de curtosis positiva en las orillas del diagrama. La forma de como se distribuyen los puntos aparenta no ser una linea recta, por lo que esto confirma la sospecha de no normalidad de los datos.
+
+## 3. Sesgo y Curtosis
+
+```{r}
+print(paste("Sesgo de Rapidez: ", skewness(cars$speed)))
+print(paste("Curtosis de Rapidez: ", kurtosis(cars$speed)))
+print(paste("Sesgo de Distancia: ", skewness(cars$dist)))
+print(paste("Curtosis de Distancia: ", kurtosis(cars$dist)))
+```
+
+Numericamente verificamos los resultados de la gráfica previa, viendo que la rapidez tiene un sesgo cercano a 0 con leve sesgo a la izquierda. Esto puede ser explicado por la ausencia de datos identificada en la grafica anterior a partir de la primera desviación estandar hacia la derecha. Esta misma ausencia hace que su curtosis se desvie de ser 0. Por el lado de los datos de la distancia, su sesgo es mucho más significativo hacia la derecha, lo cual nos indica nuevamente que la distribución no puede ser normal.
+
+## 4. Media, Mediana, Rango Medio
+
+```{r}
+summary(cars)
+
+print(paste("Rango medio de Rapidez: ", (max(cars$speed) + min(cars$speed))/2))
+print(paste("Rango medio de Distancia: ", (max(cars$dist) + min(cars$dist))/2))
+```
+
+La media y la mediana están relativamente cerca para los datos de rapidez, teniendo una diferencia de 0.4 relativamente chica a comparación de su rango medio de 14.5. En cuanto a los datos de la distancia, la diferencia entre media y mediana es de casi 9, mientras su rango medio es de 61. Esto muestra que la primera distribución puede ser normal, mientras que la segunda sería mucho menos probable que sea el caso.
+
+## 5. Boxplots
+
+```{r}
+par(mfrow = c(1, 2))
+
+# Create the boxplots
+boxplot(cars$speed, main = "Rapidez", horizontal = TRUE)
+boxplot(cars$dist, main = "Distancia", horizontal = TRUE)
+```
+
+En el boxplot de los datos de velocidad, se puede ver que la mediana esta relativamente centrada, mientras que en el caso de la distancia se ve cargada hacia la izquierda, indicando un sesgo a la derecha. Esto indica nuevamente que la distribucion de los datos de la izquierda se aproximan más a lo esperado de una distribución normal, en contraste de lo observado en el boxplot de la derecha.
+
+## 6. Distribución e Histogramas
+
+```{r}
+hist(cars$speed,freq=FALSE)
+lines(density(cars$speed),col="red")
+curve(dnorm(x,mean=mean(cars$speed),sd=sd(cars$speed)), from=min(cars$speed), to=max(cars$speed), add=TRUE, col="blue",lwd=2)
+
+hist(cars$dist,freq=FALSE)
+lines(density(cars$dist),col="red")
+curve(dnorm(x,mean=mean(cars$dist),sd=sd(cars$dist)), from=min(cars$dist), to=max(cars$dist), add=TRUE, col="blue",lwd=2)
+```
+
+En el histograma de la rapidez, se puede ver que la función de densidad de probabilidad esperada de la distribución actual se asemeja a la función de densidad de probabilidad de una distribución normal. Lo mismo no se puede decir para la distribución de la distancia, donde el sesgo a la derecha desvía por completo la forma de la distribución y no se alinea a lo esperado de la FDP de una normal.
+
+## 7. Conclusiones
+
+El análisis de normalidad univariada para las variables speed y dist del conjunto de datos cars sugiere que speed sigue una distribución normal, respaldado por pruebas estadísticas, QQPlots y un histograma que muestra una densidad de probabilidad cercana a la esperada. En contraste, la variable dist no cumple con los criterios de normalidad, presentando un sesgo positivo y una distribución que se aleja significativamente de la forma normal. En especial, la simetría en speed frente a la evidente asimetría en dist probablemente son la distinción clave entre ser considerado una distribución normal y no ser considerado una.
+
+
+# Actividad 1.3
+
+## 1. Normalización con Box-Cox
+### 1.1 Box-Cox Original
+
+```{r}
+# install.packages("VGAM")
+```
+
+
+```{r}
+library('MASS')
+library('VGAM')
+```
+
+```{r}
+y <- cars$dist
+x <- cars$speed
+ols = lm(cars$dist ~ cars$speed)
+```
+
+
+```{r}
+# BOX COX
+transform = boxcox(ols)
+best_lambda <- transform$x[which.max(transform$y)]
+print(best_lambda)
+
+y_norm <- (y**best_lambda - 1) / best_lambda
+x_norm <- (x**best_lambda - 1) / best_lambda
+
+```
+
+Estableciendo una relación lineal entre la distancia y la rapidez de los carros, se puede observar que el intervalo de confianza de lambda es cercano a 0.5, por lo que se puede considerar para términos prácticos que el valor de lambda efectivamente es 0.5.
+
+```{r}
+
+print("Distribución de la distancia")
+summary(y_norm)
+print(paste("Sesgo de la rapidez: ", skewness(y_norm)))
+print(paste("Curtosis de la rapidez: ", kurtosis(y_norm)))
+
+print("Distribución de la rapidez")
+summary(x_norm)
+print(paste("Sesgo de la rapidez: ", skewness(x_norm)))
+print(paste("Curtosis de la rapidez: ", kurtosis(x_norm)))
+
+```
+```{r}
+
+hist(y_norm,freq=FALSE)
+lines(density(y_norm),col="red")
+curve(dnorm(x,mean=mean(y_norm),sd=sd(y_norm)), from=min(y_norm), to=max(y_norm), add=TRUE, col="blue",lwd=2)
+
+hist(x_norm,freq=FALSE)
+lines(density(x_norm),col="red")
+curve(dnorm(x,mean=mean(x_norm),sd=sd(x_norm)), from=min(x_norm), to=max(x_norm), add=TRUE, col="blue",lwd=2)
+
+```
+
+```{r}
+# Distancia
+shapiro.test(y_norm)
+ad.test(y_norm)
+lillie.test(y_norm)
+jarque.test(y_norm)
+```
+
+```{r}
+# Rapidez
+shapiro.test(x_norm)
+ad.test(x_norm)
+lillie.test(x_norm)
+jarque.test(x_norm)
+```
+Con la transformación hecha, las distribuciones pasan las pruebas de normalidad, pero bien se puede observar algo de sesgo. Se hace un filtro de datos para intentar disminuir los efectos de este sesgo. SE PUEDE SALTAR LA SIGUIENTE SECCIÓN, YA QUE EL PROPÓSITO ES EXPLORACIÓN DE MEJORÍAS CON FILTRADO.
+
+### 1.2 Box-Cox Modificado
+
+```{r}
+y <- cars$dist
+x <- cars$speed
+
+new_index <- (y >= quantile(y, 0.05)) & (y <= quantile(y, 0.95)) & (x >= quantile(x, 0.05)) & (x <= quantile(x, 0.95))
+
+# new_index <- (y <= quantile(y, 0.95)) & (x >= quantile(x, 0.05)) & (x <= quantile(x, 0.95))
+
+y_mod <- y[new_index] + 1
+x_mod <- x[new_index] + 1
+
+ols = lm(y_mod ~ x_mod)
+
+```
+
+
+```{r}
+# BOX COX
+transform = boxcox(ols)
+
+best_lambda <- transform$x[which.max(transform$y)]
+print(best_lambda)
+
+y_norm <- (y_mod**best_lambda - 1) / best_lambda
+x_norm <- (x_mod**best_lambda - 1) / best_lambda
+```
+
+```{r}
+
+print("Distribución de la distancia")
+summary(y_norm)
+print(paste("Sesgo de la rapidez: ", skewness(y_norm)))
+print(paste("Curtosis de la rapidez: ", kurtosis(y_norm)))
+
+
+print("Distribución de la rapidez")
+summary(x_norm)
+print(paste("Sesgo de la rapidez: ", skewness(x_norm)))
+print(paste("Curtosis de la rapidez: ", kurtosis(x_norm)))
+
+```
+
+```{r}
+hist(y_norm,freq=FALSE)
+lines(density(y_norm),col="red")
+curve(dnorm(x, mean=mean(y_norm), sd=sd(y_norm)), from=min(y_norm), to=max(y_norm), add=TRUE, col="blue",lwd=2)
+
+hist(x_norm,freq=FALSE)
+lines(density(x_norm),col="red")
+curve(dnorm(x,mean=mean(x_norm), sd=sd(x_norm)), from=min(x_norm), to=max(x_norm), add=TRUE, col="blue",lwd=2)
+
+```
+
+```{r}
+# Distancia
+shapiro.test(y_norm)
+ad.test(y_norm)
+lillie.test(y_norm)
+jarque.test(y_norm)
+```
+
+```{r}
+# Speed
+shapiro.test(x_norm)
+ad.test(x_norm)
+lillie.test(x_norm)
+jarque.test(x_norm)
+```
+
+Las pruebas de normalidad también aceptan la hipótesis nula, pero se puede observar como se tiene más certeza en los resultados de las pruebas de hipotesis en la distribución de la rapidez.
+
+
+# 2. Normalización de Yeo Johnson
+
+```{r}
+y <- cars$dist
+x <- cars$speed
+
+ols = lm(y ~ x)
+
+transform_boxcox = boxcox(ols)
+best_lambda <- transform_boxcox$x[which.max(transform_boxcox$y)]
+```
+
+```{r}
+lp <- seq(-2,2,0.001)
+nlp <- length(lp)
+n=length(y)
+D <- matrix(as.numeric(NA),ncol=2,nrow=nlp)
+d <-NA
+for (i in 1:nlp){
+  d= yeo.johnson(y, lambda = lp[i])
+  p=ad.test(d)
+  D[i,]=c(lp[i],p$p.value)
+  }
+```
+
+```{r}
+N=as.data.frame(D)
+plot(N$V1, N$V2,
+type="l",col="darkred",lwd=3,
+xlab="Lambda",
+ylab="Valor p (Normalidad)")
+```
+```{r}
+G=data.frame(subset(N,N$V2==max(N$V2)))
+best_lambda <- G$V1
+print(best_lambda)
+y_norm <- (y**best_lambda - 1) / best_lambda
+```
+
+
+```{r}
+shapiro.test(y_norm)
+ad.test(y_norm)
+lillie.test(y_norm)
+jarque.test(y_norm)
+```
+
+
+```{r}
+lp <- seq(-2,2,0.001)
+nlp <- length(lp)
+n=length(x)
+D <- matrix(as.numeric(NA),ncol=2,nrow=nlp)
+d <-NA
+for (i in 1:nlp){
+  d= yeo.johnson(x, lambda = lp[i])
+  p=ad.test(d)
+  D[i,]=c(lp[i],p$p.value)
+  }
+```
+
+```{r}
+N=as.data.frame(D)
+plot(N$V1, N$V2,
+type="l",col="darkred",lwd=3,
+xlab="Lambda",
+ylab="Valor p (Normalidad)")
+```
+
+```{r}
+G=data.frame(subset(N,N$V2==max(N$V2)))
+best_lambda <- G$V1
+print(best_lambda)
+x_norm <- (x**best_lambda - 1) / best_lambda
+```
+
+
+```{r}
+shapiro.test(x_norm)
+ad.test(x_norm)
+lillie.test(x_norm)
+jarque.test(x_norm)
+```
+
+```{r}
+hist(y_norm,freq=FALSE)
+lines(density(y_norm),col="red")
+curve(dnorm(x, mean=mean(y_norm), sd=sd(y_norm)), from=min(y_norm), to=max(y_norm), add=TRUE, col="blue",lwd=2)
+
+hist(x_norm,freq=FALSE)
+lines(density(x_norm),col="red")
+curve(dnorm(x,mean=mean(x_norm), sd=sd(x_norm)), from=min(x_norm), to=max(x_norm), add=TRUE, col="blue",lwd=2)
+```
+
+$$
+y^{*} = \frac{(y+1)^{0.438} - 1}{0.438}
+$$
+
+$$
+x^{*} = \frac{(x+1)^{0.98} - 1}{0.98}
+$$
+
+# 3. Comparación entre métodos de Normalización
+
+Aunque bien ambos modelos cumplen con los criterios de normalidad, uno podría argumentar que en este caso en más conveniente utilizar la transformación de Box-Cox para normalizar los datos. Esto se debe a que el metodo permite ingresar directamente una relacion de un modelo como el OLS para encontrar el mejor lambda para ambos. En esta ocasión, el valor encontrado es lo suficientemente bueno para ambos, por lo que se tiene buenos resultados en ambas variables. Por simplicidad y por cubrir lo necesario para poder transformar adecuadamente los datos, se considerarán las transformaciones Box-Cox en adelante.
+
+# 4. OLS entre Transformación y Distancia
+
+```{r}
+y <- cars$dist
+x <- cars$speed
+ols = lm(cars$dist ~ cars$speed)
+```
+
+
+```{r}
+# BOX COX
+transform = boxcox(ols)
+best_lambda <- transform$x[which.max(transform$y)]
+print(best_lambda)
+
+y_norm <- (y**best_lambda - 1) / best_lambda
+x_norm <- (x**best_lambda - 1) / best_lambda
+
+```
+```{r}
+ols
+```
+```{r}
+plot(y_norm, x_norm)
+cor(y_norm, x_norm)
+summary(ols)
+```
+
+Los coeficientes son significativos, y las variables tienen buena correlación.
+
+6.1 Linealidad
+
+T Test
+
+$H_0:=$ El coeficiente es igual a 0.
+
+$H_A:=$ El coeficiente no es igual a 0.
+
+Significancia de los coeficientes de regresión:
+
+```{r}
+summary(ols)
+```
+
+
+6.2 Normalidad
+
+T Test
+
+$H_0:=$ La media de los errores es igual a 0.
+
+$H_A:=$ La media de los errores no es igual a 0.
+
+Shapiro-Wilk normality test
+
+$H_0:=$ La distribución de los errores es normal
+
+$H_A:=$ La distribución de los errores no es normal
+
+```{r}
+t.test(ols$residuals)
+shapiro.test(ols$residuals)
+```
+
+
+```{r}
+qqnorm(ols$residuals)
+qqline(ols$residuals)
+hist(ols$residuals)
+```
+
+
+6.3 Homocedasticidad
+
+Breusch-Pagan
+
+$H_0:=$ Los datos tienen homocedasticidad.
+
+$H_A:=$ Los datos no tienen homocedasticidad.
+
+```{r}
+library(lmtest)
+bptest(ols)
+
+plot(ols$fitted.values, ols$residuals)
+abline(h=0, col = "red", lwd = 2)
+```
+
+6.4 Independencia
+
+Durbin Watson
+
+$H_0:=$ No existe autocorrelación en los datos
+
+$H_A:=$ Existe autocorrelacion en los datos.
+
+```{r}
+dwtest(ols)
+
+plot(ols$residuals)
+abline(h=0, col = "red", lwd = 2)
+```
+
+

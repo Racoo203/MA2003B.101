@@ -1,0 +1,171 @@
+---
+title: "Actividad 2.3 Regresión lineal Múltiple"
+author: "Raúl Correa Ocañas - A01722401"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(reshape2)
+library(ggplot2)
+library(car)
+```
+
+Analiza la base de datosRes.csv Download datosRes.csv en donde se describen los datos recolectados en experimento realizado para estudiar la relación de la resistencia al desprendimiento de un alambre adherido (una medida de la cantidad de fuerza que se requiere para romper la unión) con algunas de las variables en un proceso de manufactura de semiconductores. Encuentra el mejor modelo de regresión múltiple que explique la variable dependiente.
+
+# 0. Importación de Datos
+
+```{r}
+data_path = r"{../data/datosRes.csv}"
+df = read.csv(data_path)
+df
+```
+
+
+# 1. Análisis Exploratorio de Datos
+
+```{r}
+pairs(df)
+cor_matrix <- cor(df)
+cor_melted <- melt(cor_matrix)
+cor_melted_filtered <- cor_melted[upper.tri(cor_matrix, diag = FALSE), ]
+cor_melted_filtered[order(-cor_melted_filtered$value), ]
+
+ggplot(melt(df), aes(x=variable, y=value)) + 
+  geom_violin(fill = "lightblue", color = "black", alpha = 0.5) +
+  geom_boxplot(width = 0.1, color = "darkred", alpha = 0.7) + 
+  theme_minimal() +
+  labs(title="Boxplot de Variables", x="Variable", y="Valor") +
+  facet_wrap(~ variable, scales = "free")
+
+```
+
+```{r}
+cor_matrix <- cor(df[, !(names(df) %in% "Resistencia")])
+cor_melted <- melt(cor_matrix)
+cor_melted_filtered <- cor_melted[upper.tri(cor_matrix, diag = FALSE), ]
+cor_melted_filtered[order(cor_melted_filtered$value), ]
+```
+
+
+# 2. Método de Mínimos Cuadrados
+
+```{r}
+# X <- cbind(1, df$Longitud, df$Altura.matriz, df$Altura.amarre)
+X <- cbind(1, df$Longitud, df$Altura.amarre)
+
+y <- df$Resistencia
+beta <- solve(t(X) %*% X) %*% t(X) %*% y
+beta
+```
+
+# 3. Regresión lineal múltiple en R
+
+```{r}
+ols = lm(df$Resistencia ~ df$Longitud + df$Altura.amarre)
+```
+
+# 4. Evaluación del Modelo
+
+```{r}
+vif(ols)
+summary(ols)
+```
+
+## 4.1 Colinealidad de las variables involucradas
+
+Las dos variables escogidas tienen un VIF de 1.76, por lo que se tiene baja certeza de colinealidad entre las variables. Probando modelos con todas las variables, se encontraron casos en donde el VIF para Altura Poste era casi 4, por lo que se buscó descartar con la sospecha de colinealidad. Al probar con las tres restantes, se tiene mayor certeza de ausencia de colinealidad.
+
+## 4.2 Variabilidad explicada por el modelo (coeficiente de determinación)
+
+Con las variables de Longitud y Altura Amarre, se explica el 98.15% de la variabilidad de los datos. Si se incluyen las variables Altura Poste y Altura Matriz, la variabilidad no podría ser tan distinta y la mejoría no es significativa, por lo que se evalúa que el modelo actual representa adecuadamente la variablidad de los datos.
+
+## 4.3 Significancia del modelo: Valor p del modelo (F)
+
+El modelo actual tiene un valor de F de 637.2, indicando que el modelo es significativo. Al incluir más variables se tendría una leve, pero mayor certeza de la significancia del modelo, mas no es necesario con el valor de p actual (menor a $2.2 * 10^{-16}$).
+
+## 4.4 Significancia de Betas
+
+Todas las betas son significantes, siendo especialmente significantes los coeficientes asociados especificamente a las variables predictoras. La beta de la intersección sigue siendo significativo, pero es menos significativo a comparación a los otros coeficientes.
+
+## 4.5 Economía del modelo y variabilidad explicada (Coeficiente de determinación)
+
+El modelo es viable y tiene un excelente porcentaje de variabilidad explicada. El tener ese nivel usando unicamente dos variables es un indicador de que el modelo es adecuado y sencillo.
+
+# 5. Validación del Modelo
+
+## 5.1 Normalidad de los residuos
+
+Shapiro-Wilk normality test
+
+-   $H_0:=$ La distribución de los errores es normal
+
+-   $H_A:=$ La distribución de los errores no es normal
+
+```{r}
+shapiro.test(ols$residuals)
+```
+Con un valor de p de 0.8725 para la prueba de Shapiro-Wilk, no se tiene evidencia para rechazar la hipotesis nula, por lo que se puede inferir que la distribución de los errores es normal.
+
+
+## 5.2 Verificación de media cero
+
+T Test
+
+-   $H_0:=$ La media de los errores es igual a 0.
+
+-   $H_A:=$ La media de los errores no es igual a 0.
+
+```{r}
+t.test(ols$residuals)
+mean(ols$residuals)
+
+qqnorm(ols$residuals)
+qqline(ols$residuals)
+
+hist(ols$residuals)
+```
+
+Confirmando con gráficos y la prueba de T-student, se tiene un valor de p de "1", indicando que no se tiene suficiente evidencia estadistica para rechazar la hipotesis nula. Por lo tanto, se infiere que la media de los residuos efectivamente es 0.
+
+## 5.3 Homocedasticidad
+
+Breusch-Pagan
+
+-   $H_0:=$ Los datos tienen homocedasticidad.
+
+-   $H_A:=$ Los datos no tienen homocedasticidad.
+
+```{r}
+library(lmtest)
+bptest(ols)
+
+
+plot(ols$fitted.values, ols$residuals)
+abline(h=0, col = "red", lwd = 2)
+```
+
+Confirmando con gráficos y la prueba de Breusch-Pagan, el resultado es un valor de p de 0.4824, por lo que no se tiene suficiente evidencia estadistica para rechazar la hipotesis nula. Esto permite la inferencia de decir que los residuos tienen homocedasticidad.
+
+## 5.4 Independencia
+
+Durbin Watson
+
+-   $H_0:=$ No existe autocorrelación en los datos
+
+-   $H_A:=$ Existe autocorrelacion en los datos.
+
+```{r}
+dwtest(ols)
+
+plot(ols$residuals)
+abline(h=0, col = "red", lwd = 2)
+```
+
+Usando el gráfico se puede observar que podría haber alguna tendencia en la data, mas la prueba de Durbin-Watson indica que no se tiene suficiente evidencia estadística para rechazar la hipótesis nula. Esto indica que se puede inferir que no existe una autocorrelación en los residuos.
+
+# 6. Conclusiones
+
+El análisis de regresión lineal múltiple sobre el dataset determinó que las variables Longitud y Altura Amarre son las mejores predictoras de la resistencia al desprendimiento de un alambre adherido. El modelo final explica el 98.15% de la variabilidad en la resistencia, lo que indica un excelente ajuste. Todos los coeficientes son significativos, demostrando que ambas variables tienen un impacto relevante en la resistencia. No se reportan problemas de colinealidad, ya que los valores de VIF fueron bajos. Las pruebas de validación confirmaron la normalidad, homocedasticidad y la independencia de los residuos, lo que respalda la fiabilidad del modelo. El valor de F indica que el modelo es estadísticamente significativo. En resumen, el modelo es simple y eficaz para predecir la resistencia con un alto grado de precisión. Este resultado sugiere que no es necesario incluir variables adicionales para mejorar la calidad de las predicciones.

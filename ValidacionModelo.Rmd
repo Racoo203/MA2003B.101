@@ -1,0 +1,277 @@
+---
+title: "Validación del modelo en Regresión Múltiple"
+author: "Rodolfo Fernández de Lara (estructurado con ChatGPT)"
+date: "ago 2024"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+1. Linealidad
+
+El supuesto de linealidad establece que la relación entre las variables independientes y la variable dependiente debe ser lineal.
+Verificación
+
+    Gráfico de residuos estandarizados contra valores predichos: Un patrón aleatorio alrededor de la línea cero sugiere linealidad.
+    Prueba de RESET de Ramsey: Evalúa si hay términos omitidos que podrían indicar una relación no lineal.
+
+```{r}
+
+# Ejemplo donde se cumple el supuesto
+set.seed(123)
+x <- rnorm(100, 50, 10)
+y <- 5 + 2 * x + rnorm(100, 0, 5)
+model1 <- lm(y ~ x)
+plot(fitted(model1), resid(model1), main = "Residuos vs Valores Predichos")
+abline(h = 0, col = "red")
+
+# Ejemplo donde no se cumple el supuesto
+y <- 5 + 2 * x^2 + rnorm(100, 0, 5)
+model2 <- lm(y ~ x)
+plot(fitted(model2), resid(model2), main = "Residuos vs Valores Predichos")
+abline(h = 0, col = "red")
+
+# Prueba de RESET de Ramsey
+library(lmtest)
+resettest(model2)
+```
+Cómo lidiar con la no linealidad
+
+Si el supuesto de linealidad no se cumple, se pueden agregar términos polinomiales o utilizar la prueba de RESET de Ramsey para identificar la necesidad de estos términos.
+
+```{r}
+
+# Ajuste con términos polinomiales
+model2_corrected <- lm(y ~ poly(x, 2))
+plot(fitted(model2_corrected), resid(model2_corrected), main = "Residuos vs Valores Predichos (Corregido)")
+abline(h = 0, col = "red")
+```
+
+2. Independencia de errores
+
+Los errores deben ser independientes entre sí. La autocorrelación en los errores puede invalidar los resultados del modelo.
+Verificación
+
+    Test de Durbin-Watson: Un valor cercano a 2 indica independencia.
+    Prueba Breusch-Godfrey: Evalúa la autocorrelación de los residuos de órdenes superiores.
+
+Hipótesis
+
+    H₀: Los errores no están autocorrelacionados.
+    H₁: Los errores están autocorrelacionados.
+
+Estadístico de prueba
+
+    La ecuación para el estadístico de Durbin-Watson es:
+
+\[
+DW = \frac{\sum_{t=2}^{n} (e_t - e_{t-1})^2}{\sum_{t=1}^{n} e_t^2}
+\]
+
+Un valor cercano a 2 sugiere independencia.
+
+```{r}
+
+# Ejemplo donde se cumple el supuesto
+y <- 5 + 2 * x + rnorm(100, 0, 5)
+model1 <- lm(y ~ x)
+dwtest(model1)
+bgtest(model1)
+
+# Ejemplo donde no se cumple el supuesto
+y[1] <- 5 + 2 * x[1] + rnorm(1, 0, 5)
+for (i in 2:100) {
+  y[i] <- 0.8 * y[i-1] + 2 * x[i] + rnorm(1, 0, 5)
+}
+model2 <- lm(y ~ x)
+dwtest(model2)
+bgtest(model2)
+```
+
+Cómo lidiar con la autocorrelación
+
+Si hay autocorrelación, se puede ajustar un modelo de regresión con errores autocorrelacionados, como un modelo ARIMA.
+
+```{r}
+
+library(forecast)
+model2_arima <- auto.arima(y, xreg = x)
+summary(model2_arima)
+```
+3. Homoscedasticidad
+
+La varianza de los errores debe ser constante. La heterocedasticidad puede distorsionar las inferencias.
+Verificación
+
+    Gráfico de residuos estandarizados contra valores predichos: Un patrón uniforme sugiere homocedasticidad.
+    Test de Breusch-Pagan: Evalúa la constancia de la varianza.
+    Test de White: Prueba más robusta que no asume una forma específica de la heterocedasticidad.
+
+Hipótesis
+
+    H₀: La varianza de los errores es constante (homocedasticidad).
+    H₁: La varianza de los errores no es constante (heterocedasticidad).
+
+```{r}
+# Ejemplo donde se cumple el supuesto
+y <- 5 + 2 * x + rnorm(100, 0, 5)
+model1 <- lm(y ~ x)
+plot(fitted(model1), sqrt(abs(resid(model1))), main = "Escala-Localización")
+abline(h = 0, col = "red")
+bptest(model1)
+gqtest(model1)
+
+# Ejemplo donde no se cumple el supuesto
+y <- 5 + 2 * x + rnorm(100, 0, 5 * x)
+model2 <- lm(y ~ x)
+plot(fitted(model2), sqrt(abs(resid(model2))), main = "Escala-Localización")
+abline(h = 0, col = "red")
+bptest(model2)
+gqtest(model2)
+```
+Cómo lidiar con la heterocedasticidad
+
+Para corregir la heterocedasticidad, se puede aplicar una transformación logarítmica o utilizar regresión robusta.
+
+```{r}
+
+# Transformación logarítmica
+model2_log <- lm(log(y) ~ x)
+plot(fitted(model2_log), sqrt(abs(resid(model2_log))), main = "Escala-Localización (Log)")
+abline(h = 0, col = "red")
+
+# Regresión robusta
+library(MASS)
+model2_robust <- rlm(y ~ x)
+summary(model2_robust)
+```
+
+4. Normalidad de los errores
+
+Los errores deben seguir una distribución normal para que las inferencias basadas en el modelo sean válidas.
+Verificación
+
+    Q-Q plot: Si los puntos siguen una línea recta, los errores son normales.
+    Test de Shapiro-Wilk: Evalúa la normalidad de los residuos.
+    Test de Kolmogorov-Smirnov: Otra prueba para verificar la normalidad.
+
+Hipótesis
+
+    H₀: Los errores siguen una distribución normal.
+    H₁: Los errores no siguen una distribución normal.
+
+```{r}
+
+# Ejemplo donde se cumple el supuesto
+qqnorm(resid(model1))
+qqline(resid(model1))
+shapiro.test(resid(model1))
+ks.test(resid(model1), "pnorm", mean = mean(resid(model1)), sd = sd(resid(model1)))
+
+# Ejemplo donde no se cumple el supuesto
+y <- 5 + 2 * x + rt(100, df = 2) * 5  # Distribución t con df bajos para mayor cola
+model2 <- lm(y ~ x)
+qqnorm(resid(model2))
+qqline(resid(model2))
+shapiro.test(resid(model2))
+ks.test(resid(model2), "pnorm", mean = mean(resid(model2)), sd = sd(resid(model2)))
+```
+
+Cómo lidiar con la no normalidad
+
+Se pueden realizar transformaciones en la variable dependiente o utilizar métodos robustos.
+
+```{r}
+
+# Transformación logarítmica
+model2_log <- lm(log(y) ~ x)
+qqnorm(resid(model2_log))
+qqline(resid(model2_log))
+
+# Modelos robustos
+library(MASS)
+model2_robust <- rlm(y ~ x)
+summary(model2_robust)
+```
+5. Ausencia de multicolinealidad
+
+No debe existir una colinealidad perfecta o casi perfecta entre las variables independientes, ya que esto puede distorsionar los resultados del modelo.
+Verificación
+
+    Factor de inflación de la varianza (VIF): Valores superiores a 10 indican multicolinealidad preocupante.
+    Condición del número: Un valor alto indica multicolinealidad.
+    Eigenvalues y eigenvectors: Análisis más detallado de la colinealidad.
+
+```{r}
+
+# Ejemplo donde se cumple el supuesto
+x1 <- rnorm(100, 50, 10)
+x2 <- rnorm(100, 30, 5)
+y <- 5 + 2 * x1 + 3 * x2 + rnorm(100, 0, 5)
+model1 <- lm(y ~ x1 + x2)
+library(car)
+vif(model1)
+
+# Ejemplo donde no se cumple el supuesto
+x2 <- x1 + rnorm(100, 0, 1)  # x2 altamente correlacionada con x1
+model2 <- lm(y ~ x1 + x2)
+vif(model2)
+```
+
+Cómo lidiar con la multicolinealidad
+
+Para manejar la multicolinealidad, se puede eliminar una de las variables correlacionadas o utilizar el análisis de componentes principales (PCA).
+
+```{r}
+
+# Eliminando una variable
+model2_reduced <- lm(y ~ x1)
+summary(model2_reduced)
+
+# Análisis de componentes principales
+library(stats)
+pca <- prcomp(cbind(x1, x2), scale. = TRUE)
+summary(pca)
+```
+
+6. Ausencia de valores atípicos influyentes
+
+No debe haber valores atípicos que influyan desproporcionadamente en los resultados del modelo.
+Verificación
+
+    Distancia de Cook: Valores superiores a 1 indican observaciones influyentes.
+    Leverage y DFBETAS: Evaluación adicional de la influencia de los datos.
+    Gráfico de apalancamiento y residuos: Para identificar puntos influyentes.
+
+```{r}
+
+# Ejemplo donde se cumple el supuesto
+cooksd <- cooks.distance(model1)
+plot(cooksd, type = "h", col = "blue")
+abline(h = 1, col = "red")
+
+# Ejemplo donde no se cumple el supuesto
+y[100] <- 500  # Un valor atípico muy influyente
+model2 <- lm(y ~ x1 + x2)
+cooksd <- cooks.distance(model2)
+plot(cooksd, type = "h", col = "blue")
+abline(h = 1, col = "red")
+```
+
+Cómo lidiar con los valores atípicos influyentes
+
+Se puede eliminar el valor atípico o usar métodos robustos para minimizar su influencia.
+
+```{r}
+
+# Eliminar la observación atípica
+model2_reduced <- lm(y[-100] ~ x1[-100] + x2[-100])
+summary(model2_reduced)
+
+# Regresión robusta
+model2_robust <- rlm(y ~ x1 + x2)
+summary(model2_robust)
+```
+
+

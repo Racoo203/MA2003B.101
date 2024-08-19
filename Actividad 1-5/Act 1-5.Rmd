@@ -1,0 +1,201 @@
+---
+title: "Actividad 1.5 Combinaciones lineales y Validación de la Normal Multivariada"
+author: "Raúl Correa Ocañas"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(dplyr)
+library(MVN)
+library(mnormt)
+library(matlib)
+
+set.seed(42)
+```
+
+# Ejercicio 1.
+
+Considere la matriz de datos siguiente: $X = \begin{bmatrix}1 & 4 & 3\\ 6 & 2 & 6 \\ 8 & 3 & 3 \end{bmatrix}$ que consta de 3 observaciones (filas) y 3 variables (columnas).
+
+$b^{T}X = \begin{bmatrix}1 & 1 & 1\end{bmatrix} \begin{bmatrix}X_1\\ X_2 \\ X_3 \end{bmatrix} = X_1 + X_2 + X_3$
+
+$c^{T}X = \begin{bmatrix}1 & 2 & -3\end{bmatrix} \begin{bmatrix}X_1\\ X_2 \\ X_3 \end{bmatrix} = X_1 + 2X_2 - 3X_3$
+
+*a) Hallar la media, varianza y covarianza de* $X$
+
+```{r}
+X = matrix(c(1, 4, 3, 6, 2, 6, 8, 3, 3), nrow = 3, byrow = TRUE)
+
+print("Media de X")
+colMeans(X)
+print("Varianzas y Covarianzas de X")
+cov(X)
+
+print("Estimador Insesgado")
+
+```
+
+*b) Hallar la media, varianza y covarianza de* $b^{T}X$ y $c^{T}X$
+
+```{r}
+
+bX = matrix(X[,1] + X[,2] + X[,3])
+cX = matrix(X[,1] + 2*X[,2] - 3*X[,3])
+```
+
+```{r}
+
+print("Media de b'X")
+print(mean(bX))
+print("Media de c'X")
+print(mean(cX))
+
+print("Covarianza de b'X")
+print(cov(bX))
+print("Covarianza de c'X")
+print(cov(cX))
+```
+
+*c) Hallar el determinante de S (matriz de var-covarianzas de X)*
+
+```{r}
+det_S = det(cov(X))
+print("Determinante de S")
+print(det_S)
+```
+
+*d) Hallar los valores y vectores propios de S*
+
+```{r}
+eigen_S = eigen(cov(X))
+
+print("Valores propios de S")
+print(eigen_S$values)
+
+print("Vectores propios de S")
+print(eigen_S$vectors)
+```
+
+*e) Argumentar si hay independencia entre b'X y c'X , ¿y qué ocurre con X1, X2 y X3? ¿son independientes?*
+
+```{r}
+cov(matrix(c(bX,cX), nrow = 3, byrow = FALSE))
+
+print("Varianza Generalizada entre b'X y c'X")
+print(det(cov(matrix(c(bX,cX), nrow = 3, byrow = FALSE))))
+
+print("Varianza Generalizada entre X1, X2, X3")
+print(det(cov(X)))
+```
+
+Dos variables unicamente son consideradas como independientes cuando su covarianza es 0 y sus respectivas distribuciones son normales. La covarianza entre $b^{T}X$ y $c^{T}X$ es -3 y la varianza generalizada es de 507. Si $b^{T}X$ y $c^{T}X$ fuesen variables independientes, su covarianza sería de 0 y su varianza generalizada sería de 516 (ya que sería igual a la multiplicación de var($b^{T}X$) y var($c^{T}X$) ). Esto sugiere sospechas de independencia entre las variables en el caso de que la muestra de las variables sean normales.
+
+Por otro lado, las variables $X_1, X_2, X_3$ tienen una varianza generalizada de 0, por lo que se sabe con certeza que alguna de las variables es una combinación lineal del resto, por lo que no pueden ser independientes.
+
+```{r}
+plot(bX, cX)
+```
+
+*f) Hallar la varianza generalizada de S. Explicar el comportamiento de los datos de X basándose en los la varianza generalizada, en los valores y vectores propios de S.*
+
+```{r}
+det(cov(X))
+```
+
+Dado que uno de los valores propios es casi 0, sugiriendo que una de las variables casí no aporta a la variabilidad de los datos. Esto combinado con el hecho de tener una varianza generalizada de 0 indica que efectivamente una de las variables es linealmente dependiente de otra o más variables.
+
+# Ejercicio 2.
+
+Explore los resultados del siguiente código y dé una interpretación.
+
+```{r}
+
+x = rnorm(100, 10, 2)
+y = rnorm(100, 10, 2)
+
+datos = data.frame(x,y)
+datos
+```
+
+```{r}
+mvn(datos, mvnTest = "hz", multivariatePlot = "persp")
+```
+
+```{r}
+mvn(datos, mvnTest = "hz", multivariatePlot = "contour")
+```
+
+La prueba de Henze-Zirkler es una prueba de normalidad multivariada en la que su hipótesis nula es que la distribución es normal. Al tener un valor de p de 0.718, no se tiene suficiente evidencia estadística para rechazar la hipótesis nula y por lo tanto se infiere que la distribución conjunta de las variables efectivamente es normal. También se hicieron pruebas de Anderson-Darling para cada variable para probar sus respectivas normalidades univariadas. Estas tuvieron valores p 0.462 y 0.355, ambas sin tener suficiente evidencia estadistica para rechazar la hipótesis nula. Por ende se puede inferir normalidad univariada para cada variable. La curtosis es cercana a cero para cada variable, y sus sesgos son relativamente cercanos a cero también. Observando las gráficas, la forma de la distribución efectivamente parece normal bivariada y sus contornos confirman este comportamiento. Por lo tanto, se puede inferir que se cumplen los supuestos de la normal multivariada y por lo tanto la distribución conjunta es normal.
+
+# Ejercicio 3.
+
+Un periódico matutino enumera los siguientes precios de autos usados para un compacto extranjero con edad medida en años y precio en venta medido en miles de dólares. 
+
+```{r}
+x1 = c(1, 2, 3, 3, 4, 5, 6, 8, 9, 11)
+x2 = c(18.95, 19.00, 17.95, 15.54, 14.00, 12.95, 8.94, 7.49, 6.00, 3.99)
+```
+
+**a) Construya un diagrama de dispersión**
+
+```{r}
+plot(x1, x2)
+```
+
+**b) Inferir el signo de la covarianza muestral a partir del gráfico.** 
+
+La covarianza de los datos tiene que ser negativa, debido a que se observa una relación negativa (mientras X1 incrementa, X2 decrementa y viceversa).
+
+**c) Calcular el cuadrado de las distancias de Mahalanobis**
+
+```{r}
+X = matrix(c(x1,x2), ncol = 2, byrow = FALSE)
+mu = colMeans(X)
+
+sigma = cov(X)
+
+mahalanobis_dist = mahalanobis(X, center = mu, cov = sigma)
+mahalanobis_dist
+
+```
+
+**d) Usando las anteriores distancias, determine la proporción de las observaciones que caen dentro del contorno de probabilidad estimado del 50% de una distribución normal bivariada.** 
+
+```{r}
+chi_sq_crit = qchisq(0.5, df = 2)
+
+is_in_contour = (mahalanobis_dist <= chi_sq_crit)
+mean(is_in_contour)
+```
+
+**e) Ordene el cuadrado de las distancias del inciso c y construya un diagrama chi-cuadrado**
+
+```{r}
+mahalanobis_dist_sorted = sort(mahalanobis_dist)
+
+chi_square_quantiles = qchisq(ppoints(length(mahalanobis_dist_sorted)), df = 2)
+
+plot(chi_square_quantiles, mahalanobis_dist_sorted, 
+     main = "Diagrama Chi-cuadrado",
+     xlab = "Cuantiles teóricos de Chi-cuadrado",
+     ylab = "Distancias de Mahalanobis ordenadas")
+abline(0, 1, col = "red")
+
+```
+
+**f) Dados los resultados anteriores, serían argumentos para decir que son aproximadamente normales bivariados?**
+
+Según lo observado en la gráfica de QQPlot, se tienen fuertes sospechas de que la data es normalmente bivariada. Los puntos están cerca a la linea que sería lo esperado de una distribución normal bivariada, y al comparar si el 50% de los datos observados correspondian a lo esperado en la teoría, se tuvieron resultados que afirman la sospecha. Sería más convincente hacer pruebas de normalidad multivariada para afirmar la sospecha.
+
+# Ejercicio 4.
+
+Si $X$ es un vector aleatorio con $X_1, X_2, X_3$ son tres variables conjuntamente normales, no independientes, con $b$, un vector de 3 constantes, $b_1, b_2, b_3$, y $c$, otro vector de 3 constantes, $c_1, c_2, c_3$, demuestra que las variables $V_1 = b'X$ y $V_2 = c'X$ son independientes si $b'c = 0$.
+
+Recordemos que $E(\alpha X) = \alpha E(X) $ donde $\alpha$ es un vector escalar. Si $Cov(b^TX, c^TX) = \frac{1}{n}(b^TX - E(b^TX)(c^TX - E(c^TX))$, entonces $Cov(b^TX, c^TX) = \frac{1}{n}(b^TX - b^TE(X))(c^TX - c^TE(X))$. Factorizando las constantes:
+
+$$ Cov(b^TX, c^TX) = \frac{1}{n}b^T(X - E(X))^T(X - E(X))c = b^TCov(X)c$$
+
+Bien se sabe que la matriz de covarianzas es simétrica, por lo que el producto $b^TCov(X)c$ debe dar 0. Recordando que las variables son conjuntamente normales, y observando que la covarianza entre $V_1, V_2$ es cero, hemos demostrado que son independientes.

@@ -1,0 +1,73 @@
+---
+title: "Actividad 1.6 Componentes principales"
+author: "Raúl Correa Ocañas"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(reshape2)
+```
+
+# IMPORTACION DE DATOS
+
+```{r}
+data_path = "../data/paises_mundo.csv"
+df = read.csv(data_path)
+df
+```
+
+# PARTE I
+
+## 1. Análisis de Matriz de Covarianza
+
+```{r}
+cov_df = cov(df)
+eigen_cov_df = eigen(cov_df)
+```
+
+```{r}
+cov_df
+```
+
+```{r}
+eigen_cov_df$values / sum(eigen_cov_df$values)
+sum(eigen_cov_df$values)
+sum(diag(cov_df))
+cumsum(eigen_cov_df$values / sum(eigen_cov_df$values))
+```
+
+*Según los resultados anteriores, ¿qué componentes son los más importantes?*
+
+Los primeros dos explican el 99.99% de la variación de los datos, por lo que se puede argumentar que con estos dos se puede reducir la dimensionalidad de los datos y perder únicamente menos de un 0.01% de la variación.
+
+*Escriba la ecuación de la combinación lineal de los Componentes principales CP1 y CP2. ¿Qué variables son las que más contribuyen a la primera y segunda componentes principales? (observe los coeficientes en valor absoluto de las combinaciones lineales). Justifique su respuesta.*
+
+```{r}
+eigen_cov_df$vectors[1,]
+eigen_cov_df$vectors[2,]
+```
+
+$$
+
+$$
+
+## 2. Análisis de Matriz de Correlación
+
+```{r}
+cor_df = cor(df)
+eigen_cor_df = eigen(cor_df)
+```
+
+```{r}
+cor_df
+```
+
+```{r}
+eigen_cor_df$values / sum(eigen_cor_df$values)
+sum(eigen_cor_df$values)
+sum(diag(cor_df))
+cumsum(eigen_cor_df$values / sum(eigen_cor_df$values))
+```

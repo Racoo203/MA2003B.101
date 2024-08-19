@@ -33,17 +33,177 @@ hist(df$Protein, breaks = seq(from=min(df$Protein), to=max(df$Protein)+5, by=5))
 ```
 
 ```{r}
-seq(from=min(df$Protein), to=max(df$Protein), by=5)
+library(dplyr)
+
+numeric_vars <- select_if(df, is.numeric)
+
+cov_df <- data.frame(cov(numeric_vars, df$Protein))
+cor_df <- data.frame(cor(numeric_vars, df$Protein))
+
+cov_df
+cor_df
 ```
+
+Candidatos basandose en Coeficiente de Correlación:
+
+-   Calories
+
+-   Calories from Fat
+
+-   Total Fat
+
+-   Total Fat Daily Value
+
+-   Sodium
+
+-   Sodium Daily Value
+
+```{r}
+# Interdependencia
+
+pairs(x = df[c("Calories", "Calories.from.Fat", "Total.Fat", "Total.Fat....Daily.Value.", "Sodium", "Sodium....Daily.Value.")])
+```
+
+```{r}
+library(ggplot2)
+
+plot(df$Calories, df$Protein)
+plot(df$Calories.from.Fat, df$Protein)
+plot(df$Total.Fat, df$Protein)
+plot(df$Total.Fat....Daily.Value., df$Protein) # descartemos este
+plot(df$Sodium, df$Protein)
+plot(df$Sodium....Daily.Value., df$Protein) # y este tambien
+```
+
+Se escoge como variable predictora el sodio, debido a su alta correlación y relativamente baja covarianza con la variable de proteínas.
 
 # 2. Método de Mínimos Cuadrados
 
+$$
+\beta = (X^{T}X)^{-1}X^{T}Y
+$$
+
+```{r}
+X <- cbind(1, df$Total.Fat)
+
+beta <- solve(t(X) %*% X) %*% t(X) %*% df$Protein
+beta
+```
+
 # 3. Regresión lineal en R
+
+```{r}
+ols <- lm(df$Protein ~ df$Sodium)
+intercept <- ols$coefficients[1]
+b1 <- ols$coefficients[2]
+
+ols
+```
 
 # 4. Representación Gráfica
 
+```{r}
+plot(df$Sodium, df$Protein, ylab = "Protein",xlab = "Sodium")
+abline(ols)
+title("Protein x Sodium")
+equation <- paste("y = ", round(intercept, 2), " + ", round(b1, 2), "x", sep = "")
+text(x = 2000, y = 20, equation,)
+```
+
 # 5. Coeficiente de Determinación
+
+```{r}
+summary(ols)
+```
+
+$$
+R^{2}=1-\frac{RSS}{TSS}
+$$
+
+El modelo explica el 75.6% de la variabilidad de los datos.
 
 # 6. Validación del Modelo
 
+## 6.1 Linealidad
+
+T Test
+
+-   $H_0:=$ El coeficiente es igual a 0.
+
+-   $H_A:=$ El coeficiente no es igual a 0.
+
+Significancia de los coeficientes de regresión:
+
+```{r}
+summary(ols)
+```
+
+El resumen indica que la prueba de T regresó valores de 10.38 y 28.32, por lo que los coeficientes del modelo sugerido son significativos. Se rechaza la hipótesis nula, y por lo tanto los coeficientes son diferentes a 0.
+
+## 6.2 Normalidad
+
+T Test
+
+-   $H_0:=$ La media de los errores es igual a 0.
+
+-   $H_A:=$ La media de los errores no es igual a 0.
+
+Shapiro-Wilk normality test
+
+-   $H_0:=$ La distribución de los errores es normal
+
+-   $H_A:=$ La distribución de los errores no es normal
+
+```{r}
+t.test(ols$residuals)
+shapiro.test(ols$residuals)
+```
+
+Según los resultados de la prueba de T student, se rechaza la hipotesis nula y la media de los errores es distinta a 0. La prueba de Shapiro Wilk indica que se rechaza la hipotesis nula y por lo tanto la distribución no puede considerarse como normal. Se infiere que este supuesto no se cumple.
+
+```{r}
+qqnorm(ols$residuals)
+qqline(ols$residuals)
+hist(ols$residuals)
+```
+
+## 6.3 Homocedasticidad
+
+Breusch-Pagan
+
+-   $H_0:=$ Los datos tienen homocedasticidad.
+
+-   $H_A:=$ Los datos no tienen homocedasticidad.
+
+```{r}
+library(lmtest)
+bptest(ols)
+
+
+plot(ols$fitted.values, ols$residuals)
+abline(h=0, col = "red", lwd = 2)
+```
+
+Debido al extremadamente bajo valor de p, se rechaza la hipótesis nula y por ende tampoco se puede asumir que la varianza es constante.
+
+## 6.4 Independencia
+
+Durbin Watson
+
+-   $H_0:=$ No existe autocorrelación en los datos
+
+-   $H_A:=$ Existe autocorrelacion en los datos.
+
+```{r}
+dwtest(ols)
+bptest(ols, varformula = ~ Sodium + I(Sodium^2), data = df)
+
+plot(ols$residuals)
+abline(h=0, col = "red", lwd = 2)
+```
+
+Aunque no hay un patrón claro que pueda describir la varianza, aún así se puede observar una tendencia de oscilación de los residuos. Junto a los resultados, se afirma que existe autocorrelación y por ende no son independientes.
+
 # **7. Conclusiones**
+
+El modelo de regresión lineal entre el sodio y las proteínas en el menú de McDonald's es significativo y explica el 75.6% de la variabilidad en las proteínas. Sin embargo, las pruebas indican fallos en los supuestos de normalidad, homocedasticidad e independencia de los residuos, sugiriendo que las estimaciones pueden no ser totalmente fiables. Se pueden considerar otros modelos, variables y transformaciones para ajustarse mejor a los datos.
