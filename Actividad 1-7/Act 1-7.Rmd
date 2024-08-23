@@ -26,17 +26,20 @@ df = read.csv(data_path)
 head(df,5)
 ```
 
-Realicen el análisis factorial, discutiendo y comentando los resultados obtendidos de: 
+Realicen el análisis factorial, discutiendo y comentando los resultados obtendidos de:
 
 # Ejercicio 1.
+
 Obtener la matriz de correlaciones y la matriz de valores p de significancia por pares.
 
 ```{r}
 corr.test(df,adjust="none")
 ```
+
 Según lo observado como resultado de salida para este comando, se tienen las correlaciones por combinación de variables y sus respectivos valores p. Estos valores indican la significancia estadística de los resultados obtenidos. Según lo observado en la segunda tabla, se acepta una hipotesis nula para la correlación de las variables Temperatura y LnProteinas, indicando que su correlación no es estadísticamente significativa. Se observa que las variables con mejor correlaciones son: LnTamaño y Tamaño, LnTamaño y Proteina, y LnProteina y Proteina.
 
 # Ejercicio 2.
+
 Hacer una gráfica de la matriz de correlaciones.
 
 ```{r}
@@ -46,12 +49,11 @@ ggcorrplot(mat_cor,type="lower",hc.order = T)
 
 En esta gráfica podemos ver de manera visual la correlación de las variables, mientras más rojas con mayor correlacion positiva y mientras más azules más correlacion negativa. En la gráfica se excluyen la repetición de las combinaciones de las variables, por lo que permite un mejor analisis de que correlaciones tienen mayor intensidad. El gráfico sugiere que Ln Tamaño y Tamaño tienen una fuerte correlación positiva, y después hay otros tres pares de combinaciones que visualmente no se puede apreciar la diferencia de correlaciones entre estos, por lo que es más complicado observar cual tendría mayor o menor correlación.
 
-
 # Ejercicio 3.
+
 Aplicar una prueba de correlación conjunta a los datos para verficar si es aplicable el Análisis Factorial y concluir.
 
-$H_0$: Las variables son ortogonales (matriz identidad)
-$H_A$: Las variables no son ortogonales (difiere de matriz identidad)
+$H_0$: Las variables son ortogonales (matriz identidad) $H_A$: Las variables no son ortogonales (difiere de matriz identidad)
 
 ```{r}
 b = check_sphericity_bartlett(df)
@@ -61,10 +63,11 @@ b$chisq
 b$p
 b$dof
 ```
-Según los resultados obtenidos en la prueba de esfericidad de Bartlet, se tiene un valor de p menor a 0.001, por lo que se puede inferir que existe suficiente evidencia estadística y correlación significante para poder realizar un análisis factorial. 
 
+Según los resultados obtenidos en la prueba de esfericidad de Bartlet, se tiene un valor de p menor a 0.001, por lo que se puede inferir que existe suficiente evidencia estadística y correlación significante para poder realizar un análisis factorial.
 
 # Ejercicio 4.
+
 Otra prueba para, para comprobar si el análisis factorial es viable, y muy citada, es la prueba KMO. Aplíquela a estos datos, ¿contradice los resutados del inciso anterior?
 
 ```{r}
@@ -74,9 +77,10 @@ K = KMO(cor_df)
 cat("El valor del estadístico es: ", K$MSA)
 ```
 
-Según los resultados obtenidos con la prueba KMO, los resultados caerían en el intervalo 0.60 a 0.69, lo cual se considera mediocre según los autores. Aunque utilizar descripciones de este estilo no enriquecen mucho la información que se tiene de los datos, ciertamente contradice la certeza que se tiene en la prueba de Chi Cuadrada, la cual con mucha certeza (p < 0.001) indica que los datos son aptos para un análisis factorial. Sin embargo, un estadístico de 0.5 indica para terminos prácticos una aceptación de la correlación conjunta. Esto significa que se tiene argumentos para sustentar que ambas pruebas concuerdan en el resultado.
+Según los resultados obtenidos con la prueba KMO, los resultados caerían en el intervalo 0.60 a 0.69, lo cual se considera mediocre según los autores. Aunque utilizar descripciones de este estilo no enriquecen mucho la información que se tiene de los datos, ciertamente contradice la certeza que se tiene en la prueba de Chi Cuadrada, la cual con mucha certeza (p \< 0.001) indica que los datos son aptos para un análisis factorial. Sin embargo, un estadístico de 0.5 indica para terminos prácticos una aceptación de la correlación conjunta. Esto significa que se tiene argumentos para sustentar que ambas pruebas concuerdan en el resultado.
 
 # Ejercicio 5.
+
 Si los datos pasaron la prueba de los puntos anteriores 3 y 4, hacer un análisis factorial usando el criterio de máxima verosimilitud y el de mínimo residuo.
 
 ```{r}
@@ -97,63 +101,97 @@ eigenvalues
 
 
 ```
+
 Se muestran las comunalidades de las variables, que indican qué proporción de la varianza de cada variable es explicada por los factores extraídos. En ambos modelos, LnTamaño, Tamaño y LnProteinas son explicadas a al menos el 90% de sus variabilidades con los factores propuestos. La variable Proteinas pueden ser explicadas a al menos un 77% con los factores propuestos en el método de maxima verosimilitud, y al menos un 60% en el método de mínimo residuo. La temperatura es altamente explicada utilizando minimos residuos, pero su explicación es pésima en el método de máxima verosimilitud. La variable Oxígeno tanto para ambos modelos no es adecuada, por lo que ambos métodos no explican con los dos factores esta variable.
 
-
-
 # Ejercicio 6.
+
 Determine el número de factores adecuado según el criterio del gráfico de Cattell
 
 ```{r}
 scree(cor_df)
 ```
+
 Tanto para el método de MLE como MINRES, se puede decidir escoger entre 2 y 3 variables para el análisis factorial. Seleccionar más de 3 variables implicaría poca explicación de los datos a costo de un aumento de dimensionalidad, por lo que en este caso se puede considerar aceptable explicar los datos con dos factores, teniendo como mejor opción el método de MINRES.
 
 # Ejercicio 7.
+
 Realicen los gráficos correspondientes a la rotación Varimax y quartimax de los datos e interpreten en equipo los resultados.
 
 ```{r}
-rot = c("none", "varimax", "quartimax")
+rot = c("none", "varimax", "quartimax", "oblimin")
 bi_mod = function(tipo){
-biplot.psych(fa(df,nfactors = 2,fm="mle",rotate = tipo),main = "",col=c(2,3,4),pch = c(21,18),group = df[,"Tamano"])  }
+biplot.psych(fa(df, nfactors = 2, fm="mle", rotate = tipo), main = "",col=c(2,3,4),pch = c(21,18))  }
+sapply(rot,bi_mod)
+
+```
+
+```{r}
+rot = c("none", "varimax", "quartimax", "oblimin")
+bi_mod = function(tipo){
+biplot.psych(fa(df, nfactors = 2, fm="minres", rotate = tipo), main = "",col=c(2,3,4),pch = c(21,18))  }
 sapply(rot,bi_mod)
 ```
 
 ```{r}
-# Análisis de máxima verosimilitud
+fa_mle = fa(cor(df), nfactors = 2, rotate = "none", fm = "mle")
 fa_mle_varimax = fa(cor(df), nfactors = 2, rotate = "varimax", fm = "mle")
+fa_mle_quartimax = fa(cor(df), nfactors = 2, rotate = "quartimax", fm = "mle")
+fa_mle_oblimin = fa(cor(df), nfactors = 2, rotate = "oblimin", fm = "mle")
 
-# Análisis de mínimo residuo
+fa_minres = fa(cor(df), nfactors = 2, rotate = "none", fm = "minres")
 fa_minres_varimax = fa(cor(df), nfactors = 2, rotate = "varimax", fm = "minres")
+fa_minres_quartimax = fa(cor(df), nfactors = 2, rotate = "quartimax", fm = "minres")
+fa_minres_oblimin = fa(cor(df), nfactors = 2, rotate = "oblimin", fm = "minres")
 
-# Comunalidades
-communalities_varimax = data.frame(MLE = fa_mle$communality, MINRES = fa_minres$communality)
-communalities_varimax = communalities_varimax[order(communalities_varimax$MLE, decreasing = TRUE), ]
-communalities
 
-eigenvalues_varimax = data.frame(MLE = fa_mle_varimax$values, MINRES = fa_minres_varimax$values)
-eigenvalues_varimax = eigenvalues_varimax[order(eigenvalues_varimax$MLE, decreasing = TRUE), ]
-eigenvalues_varimax
+# communalities_mle = data.frame(NONE = fa_mle$communalities, VARIMAX = fa_mle_varimax$communalities, QUARTIMAX = fa_mle_quartimax$communalities, OBLIMIN = fa_mle_oblimin$communalities)
+# communalities_minres = data.frame(NONE = fa_minres$communalities, VARIMAX = fa_minres_varimax$communalities, QUARTIMAX = fa_minres_quartimax$communalities, OBLIMIN = fa_minres_oblimin$communalities)
+# 
+# eigenvalues_mle = data.frame(NONE = fa_mle$values, VARIMAX = fa_mle_varimax$values, QUARTIMAX = fa_mle_quartimax$values, OBLIMIN = fa_mle_oblimin$values)
+# eigenvalues_minres = data.frame(NONE = fa_minres$values, VARIMAX = fa_minres_varimax$values, QUARTIMAX = fa_minres_quartimax$values, OBLIMIN = fa_minres_oblimin$values)
 ```
 
 ```{r}
-# Análisis de máxima verosimilitud
-fa_mle_quartimax = fa(cor(df), nfactors = 2, rotate = "quartimax", fm = "mle")
-
-# Análisis de mínimo residuo
-fa_minres_quartimax = fa(cor(df), nfactors = 2, rotate = "quartimax", fm = "minres")
-
-# Comunalidades
-communalities_quartimax = data.frame(MLE = fa_mle$communality, MINRES = fa_minres$communality)
-communalities_quartimax = communalities_quartimax[order(communalities_quartimax$MLE, decreasing = TRUE), ]
-communalities
-
-eigenvalues_quartimax = data.frame(MLE = fa_mle_quartimax$values, MINRES = fa_minres_quartimax$values)
-eigenvalues_quartimax = eigenvalues_quartimax[order(eigenvalues_quartimax$MLE, decreasing = TRUE), ]
-eigenvalues_quartimax
+# communalities_mle
+# communalities_minres
+# 
+# eigenvalues_mle
+# eigenvalues_minres
 ```
 
+```{r}
+print("NONE")
+fa_mle$loadings
+print("VARIMAX")
+fa_mle_varimax$loadings
+print("QUARTIMAX")
+fa_mle_quartimax$loadings
+print("OBLIMIN")
+fa_mle_oblimin$loadings
+```
+```{r}
+print("NONE")
+fa_minres$loadings
+print("VARIMAX")
+fa_minres_varimax$loadings
+print("QUARTIMAX")
+fa_minres_quartimax$loadings
+print("OBLIMIN")
+fa_minres_oblimin$loadings
+```
+
+Varimax:
+
+En cuanto al método de MLE, Tamano y LnTamano tienen cargas altas en el primer factor, lo que sugiere que estos factores están altamente relacionados con el tamaño. La variable temperatura carga fuertemente en el segundo factor, lo que indica que este factor representa principalmente la temperatura. En cuanto al método de MINRES, las cargas son similares a las de Varimax con mle, con Tamano y LnTamano fuertemente cargando en el primer factor y Temperatura en el segundo.
+
+
+Quartimax:
+Los resultados son similares a los de Varimax, pero con cargas más repartidas, dificultando la interpretación pero confirmando lo observado para Varimax.
 
 
 # Ejercicio 8.
+
 ¿Qué pueden concluir? ¿Resultó razonable para este caso el modelo de análisis factorial? Expliquen.
+
+El análisis factorial realizado es razonable para este caso, debido a que la prueba de esfericidad de Bartlett indicó que las correlaciones entre las variables son suficientemente fuertes para el análisis. Confirmando con la prueba KMO, se sugiere que la adecuación no es óptima pero son aceptables. Los resultados de comunalidades y eigenvalues muestran que las variables principales, como LnTamaño y Tamaño, están bien representadas por los factores extraídos, aunque variables como Oxígeno tienen una explicación deficiente. La elección de dos factores, respaldada por el gráfico de Cattell, parece adecuada para evitar la sobrecomplicación del modelo. Las rotaciones Varimax y Quartimax facilitan la interpretación de los factores, revelando una estructura clara relacionada con el tamaño y la temperatura. Al observar los loadings de cada factor, se confirma que hace sentido que los factores sean productividad y adecuación del habitat. Un factor definitvamente está más cargado hacia la temperatura, las proteinas y el oxigeno, la cual está asociada a la productividad. El resto de las variables están asociadas con la adecuacion del habitat.
