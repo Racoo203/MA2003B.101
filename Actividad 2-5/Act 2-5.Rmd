@@ -1,0 +1,191 @@
+---
+title: "Actividad 2.5 Intervalos de confianza de una regresión"
+author: "Raúl Correa Ocañas"
+date: "2024-08-24"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(car)
+library(mnormt)
+
+```
+
+# Importación
+
+```{r}
+data = read.csv("../data/datosRes.csv")
+data
+```
+
+```{r}
+filtered_data = data[-c(9,15,17),]
+# Estos puntos están sesgando el modelo, por lo que los quitamos.
+
+filtered_y = filtered_data$Resistencia
+
+filtered_X = data.frame(cbind(filtered_data$Longitud, filtered_data$Altura.matriz, filtered_data$Altura.poste, filtered_data$Altura.amarre))
+filtered_X
+
+filtered_ols = lm(filtered_y ~ ., data = filtered_X)
+
+```
+
+```{r}
+new_X = data.frame(cbind(12,535,2,1))
+new_y = 33.49
+new_X
+```
+
+```{r}
+print("AIC")
+filtered_backwards_ols_aic = step(filtered_ols, direction = "backward", trace = 1)
+```
+
+```{r}
+print("BIC")
+n = length(filtered_y)
+filtered_backwards_ols_bic = step(filtered_ols, direction = "backward", trace=1, k=log(n))
+```
+
+# Modelo Simple
+
+## 1. Modelos de regresión
+
+```{r}
+X1 = filtered_X[,1]
+ols = lm(filtered_y ~ X1) 
+summary(ols)
+```
+
+## 2. Intervalos de la regresión
+
+```{r}
+alfa = 0.05 
+confint(ols, level = 1 - alfa)
+```
+
+```{r}
+pred_conf = predict(ols, interval = "confidence", level = 1 - alfa)
+head(data.frame(pred_conf), 6)
+```
+
+```{r}
+pred_pred = predict(ols, interval = "prediction", level = 1 - alfa)
+head(data.frame(pred_pred), 6)
+```
+
+## 3. Intervalos para una nueva observación
+
+```{r}
+alfa = 0.05 
+confint(ols, level = 1 - alfa)
+```
+
+```{r}
+predict(ols, newdata = data.frame(X1 = new_X[,1]), interval = "confidence", level = 1 - alfa)
+```
+
+```{r}
+predict(ols, newdata = data.frame(X1 = new_X[,1]), interval = "prediction", level = 1 - alfa)
+```
+
+
+## 4. Representación gráfica
+
+```{r}
+plot(X1, filtered_y, main = "Intervalos de Confianza y Prediccion",
+     xlab = "x", ylab = "y", pch = 16, col = "blue")
+points(data.frame(X1 = new_X[,1], new_y))
+abline(ols, col = "red")
+
+
+# Añadir el intervalo de confianza
+lines(X1, pred_conf[, "lwr"], col = "green", lty = 3)
+lines(X1, pred_conf[, "upr"], col = "green", lty = 3)
+
+# Añadir el intervalo de predicción
+lines(X1, pred_pred[, "lwr"], col = "orange", lty = 3)
+lines(X1, pred_pred[, "upr"], col = "orange", lty = 3)
+
+legend("topleft", legend = c("Intervalo de confianza", "Intervalo de prediccion"),
+       col = c("green", "orange"), lty = c(2, 3), bty = "n")
+```
+
+# Modelo Múltiple
+
+## 1. Modelos de regresión
+
+```{r}
+mlr = lm(filtered_y ~ ., data = filtered_X[,c(1,2)])
+summary(mlr)
+```
+
+## 2. Intervalos de la regresión
+
+```{r}
+alfa = 0.05
+confint(mlr, level = 1 - alfa)
+```
+
+```{r}
+pred_conf = predict(mlr, interval = "confidence", level = 1 - alfa)
+head(data.frame(pred_conf), 6)
+```
+
+```{r}
+pred_pred = predict(mlr, interval = "prediction", level = 1 - alfa)
+head(data.frame(pred_conf), 6)
+```
+
+## 3. Intervalos para una nueva observación
+
+```{r}
+alfa = 0.05 
+confint(mlr, level = 1 - alfa)
+```
+
+```{r}
+predict(mlr, new_X[,c(1,2)], interval = "confidence", level = 1 - alfa)
+```
+
+```{r}
+predict(mlr, new_X[,c(1,2)], interval = "prediction", level = 1 - alfa)
+```
+
+## 4. Elipse de confianza
+```{r}
+mu = mlr$coefficients[c(2,3)]
+
+n_dim = length(mu)
+
+sigma = vcov(mlr)[c(2,3),c(2,3)]
+
+beta_1 = seq(mu[1]-4*sigma[1,1]**(1/2), mu[1]+4*sigma[1,1]**(1/2), 0.00005) 
+beta_2 = seq(mu[2]-4*sigma[2,2]**(1/2), mu[2]+4*sigma[2,2]**(1/2), 0.00005) 
+
+f = function(beta_1, beta_2) dmnorm(cbind(beta_1, beta_2), mu, sigma)
+z = outer(beta_1, beta_2, f)
+
+alpha <- 0.01
+chi2_99 <- round(qchisq(1 - alpha, df = n_dim - 1), 2)
+
+zoom_out_factor = 0.01
+
+# Calculate the new axis limits
+x_range = range(beta_1)
+y_range = range(beta_2)
+
+# Plot the contour with zoomed-out limits
+contour(beta_1, beta_2, z, xlab = "Beta_1", ylab = "Beta_2", main = "Contour Plot with 99% Confidence Interval")
+
+# Add the contour for the 99% confidence interval
+contour(beta_1, beta_2, z, add = TRUE, levels = chi2_99, col = "red")
+
+points(mu[1], mu[2])
+```
+
+# Conclusiones
+
+La regresión simple realizada con la variable Longitud como predictor muestra un intervalo de confianza y predicción que permite evaluar la precisión de las estimaciones. Los intervalos de confianza para la regresión proporcionan un rango en el cual se espera que se encuentre el verdadero valor del coeficiente de la regresión, mientras que los intervalos de predicción dan un rango para una futura observación. En el modelo múltiple, se ha incorporado la variable Altura.matriz. Los intervalos de confianza y predicción proporcionan una visión más completa y ajustada del modelo al incluir más variables predictoras. La elipse de confianza muestra la región en el espacio de los coeficientes donde podemos esperar encontrar el valor verdadero de los coeficientes con una alta probabilidad.

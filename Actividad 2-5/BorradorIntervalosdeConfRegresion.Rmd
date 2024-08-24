@@ -1,0 +1,91 @@
+---
+title: "Intervalos de confianza para regresión"
+author: "Rodolfo Fernández de Lara Hadad -asistido por chatGPT y MS Copilot"
+date: "2024-08-15"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Intervalos de Confianza y Predicción en Regresión Lineal
+
+En regresión lineal, utilizamos intervalos de confianza y de predicción para evaluar la precisión de nuestras estimaciones y predicciones. Estos intervalos se calculan para:
+
+1. **La media de la variable respuesta \( y \)**
+2. **Un valor individual de la variable respuesta \( y \)**
+
+## Intervalo de Confianza para la Media de \( y \)
+
+Este intervalo proporciona un rango en el que esperamos que se encuentre la **media esperada** de \( y \) para un conjunto específico de valores de las variables predictoras \( X \).
+
+La fórmula para calcular el intervalo de confianza para la media de \( y \) es:
+
+\[
+\hat{y}_0 \pm t_{\alpha/2} \cdot SE(\hat{y}_0)
+\]
+
+Donde:
+
+- \(\hat{y}_0 = \hat{\beta}_0 + \hat{\beta}_1 X_1 + \dots + \hat{\beta}_p X_p\) es la estimación de la media de \( y \).
+- \( t_{\alpha/2} \) es el valor crítico de la distribución \( t \) de Student.
+- \( SE(\hat{y}_0) = \sqrt{\sigma^2 \left( 1/n + \frac{(X_0 - \bar{X})^2}{\sum_{i=1}^n (X_i - \bar{X})^2} \right)} \) es el error estándar de la estimación.
+
+## Intervalo de Predicción para un Valor Individual de \( y \)
+
+Este intervalo predice un **valor futuro individual** de \( y \) dado un conjunto de valores de las variables predictoras \( X \).
+
+La fórmula para calcular el intervalo de predicción es:
+
+\[
+\hat{y}_0 \pm t_{\alpha/2} \cdot SE_{pred}(\hat{y}_0)
+\]
+
+Donde:
+
+- \(\hat{y}_0\) es la predicción del valor individual de \( y \).
+- \( SE_{pred}(\hat{y}_0) = \sqrt{\sigma^2 \left( 1 + 1/n + \frac{(X_0 - \bar{X})^2}{\sum_{i=1}^n (X_i - \bar{X})^2} \right)} \) es el error estándar de la predicción.
+
+## Implementación en R
+
+A continuación, se muestra cómo calcular estos intervalos en R utilizando un ejemplo de regresión lineal y cómo generar una gráfica para visualizar las predicciones y sus intervalos:
+
+```{r}
+# Generar datos de ejemplo
+set.seed(123)
+x <- rnorm(100, mean = 5, sd = 2)
+y <- 2 + 3 * x + rnorm(100)
+
+# Ajustar el modelo de regresión lineal
+modelo <- lm(y ~ x)
+
+# Intervalos de confianza para los coeficientes
+confint(modelo, level = 0.95)
+
+# Nuevos datos para predicción
+nuevos_datos <- data.frame(x = seq(min(x), max(x), length.out = 100))
+
+# Intervalo de confianza para la media de y
+pred_conf <- predict(modelo, nuevos_datos, interval = "confidence")
+
+# Intervalo de predicción para valores individuales de y
+pred_pred <- predict(modelo, nuevos_datos, interval = "prediction")
+
+# Graficar
+plot(x, y, main = "Intervalos de Confianza y Predicción",
+     xlab = "x", ylab = "y", pch = 16, col = "blue")
+abline(modelo, col = "red")
+
+# Añadir el intervalo de confianza
+lines(nuevos_datos$x, pred_conf[, "lwr"], col = "green", lty = 2)
+lines(nuevos_datos$x, pred_conf[, "upr"], col = "green", lty = 2)
+
+# Añadir el intervalo de predicción
+lines(nuevos_datos$x, pred_pred[, "lwr"], col = "orange", lty = 3)
+lines(nuevos_datos$x, pred_pred[, "upr"], col = "orange", lty = 3)
+
+legend("topleft", legend = c("Intervalo de confianza", "Intervalo de predicción"),
+       col = c("green", "orange"), lty = c(2, 3), bty = "n")
+```
+

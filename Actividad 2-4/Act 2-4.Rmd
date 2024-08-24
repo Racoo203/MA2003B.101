@@ -7,6 +7,7 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(car)
 ```
 
 # Importación
@@ -37,5 +38,149 @@ backwards_ols_aic = step(ols, direction = "backward", trace = 1)
 ```{r}
 print("BIC")
 n = length(y)
-backwards_ols_bic = step(ols, direction = "both", trace=1, k=log(n))
+backwards_ols_bic = step(ols, direction = "backward", trace=1, k=log(n))
 ```
+
+```{r}
+best_ols = lm(y ~ ., data = X[,c(1,2,4)])
+summary(best_ols)
+```
+
+# Ejercicio 2 - 4.
+
+```{r}
+res = best_ols$residuals
+res_standard = rstandard(best_ols)
+res_student = rstudent(best_ols)
+hat = hatvalues(best_ols)
+cooks_dist = cooks.distance(best_ols)
+
+residuos_df = as.data.frame(cbind(res, res_standard, res_student, hat, cooks_dist))
+abs_residuos_df = as.data.frame(sapply(residuos_df, function (x) abs(x)))
+
+residuos_df[order(abs_residuos_df$res_student, decreasing = TRUE), ]
+```
+
+Inferimos que los puntos atípicos serían los datos con índices 15, 9 y 11. Esto se confirma tanto para la estandarización como con el escalamiento de la T de student.
+
+# Ejercicio 5.
+
+```{r}
+avPlots(best_ols)
+plot(abs_residuos_df$res_standard)
+abline(h = 0)
+for (i in 1:length(abs_residuos_df$res_standard)) {
+  segments(x0 = i, y0 = 0, x1 = i, y1 = abs_residuos_df$res_standard[i], col = "gray")
+}
+
+influencePlot(best_ols, id=TRUE)
+
+
+```
+
+# Ejercicio 6.
+
+```{r}
+filtered_data = data[-c(9,15,17),]
+
+filtered_y = filtered_data$Resistencia
+
+filtered_X = data.frame(cbind(filtered_data$Longitud, filtered_data$Altura.matriz, filtered_data$Altura.poste, filtered_data$Altura.amarre))
+
+filtered_ols = lm(filtered_y ~ ., data = filtered_X)
+
+```
+
+```{r}
+print("AIC")
+filtered_backwards_ols_aic = step(filtered_ols, direction = "backward", trace = 1)
+```
+
+```{r}
+print("BIC")
+n = length(filtered_y)
+filtered_backwards_ols_bic = step(filtered_ols, direction = "backward", trace=1, k=log(n))
+```
+
+```{r}
+filtered_best_ols = lm(filtered_y ~ ., data = filtered_X[,c(1,2,4)])
+summary(filtered_best_ols)
+```
+
+Se explica el 99.14% de los datos, a comparación del 98.81% con el modelo pasado. Aunque los dos modelos pasan las pruebas de hipótesis de significancia de los modelos, aumentó el estadístico de F de 667 a 806.3, implicando mayor significancia en el nuevo modelo.
+
+# Supuestos
+
+## Normalidad de los residuos
+
+Shapiro-Wilk normality test
+
+-   $H_0:=$ La distribución de los errores es normal
+
+-   $H_A:=$ La distribución de los errores no es normal
+
+```{r}
+shapiro.test(filtered_best_ols$residuals)
+```
+
+Con un valor de p de 0.8725 para la prueba de Shapiro-Wilk, no se tiene evidencia para rechazar la hipotesis nula, por lo que se puede inferir que la distribución de los errores es normal.
+
+## Verificación de media cero
+
+T Test
+
+-   $H_0:=$ La media de los errores es igual a 0.
+
+-   $H_A:=$ La media de los errores no es igual a 0.
+
+```{r}
+t.test(filtered_best_ols$residuals)
+mean(filtered_best_ols$residuals)
+
+qqnorm(filtered_best_ols$residuals)
+qqline(filtered_best_ols$residuals)
+
+hist(filtered_best_ols$residuals)
+```
+
+Confirmando con gráficos y la prueba de T-student, se tiene un valor de p de "1", indicando que no se tiene suficiente evidencia estadistica para rechazar la hipotesis nula. Por lo tanto, se infiere que la media de los residuos efectivamente es 0.
+
+## Homocedasticidad
+
+Breusch-Pagan
+
+-   $H_0:=$ Los datos tienen homocedasticidad.
+
+-   $H_A:=$ Los datos no tienen homocedasticidad.
+
+```{r}
+library(lmtest)
+bptest(filtered_best_ols)
+
+
+plot(filtered_best_ols$fitted.values, filtered_best_ols$residuals)
+abline(h=0, col = "red", lwd = 2)
+```
+
+Confirmando con gráficos y la prueba de Breusch-Pagan, el resultado es un valor de p de 0.4824, por lo que no se tiene suficiente evidencia estadistica para rechazar la hipotesis nula. Esto permite la inferencia de decir que los residuos tienen homocedasticidad.
+
+## Independencia
+
+Durbin Watson
+
+-   $H_0:=$ No existe autocorrelación en los datos
+
+-   $H_A:=$ Existe autocorrelacion en los datos.
+
+```{r}
+dwtest(filtered_best_ols)
+
+plot(filtered_best_ols$residuals)
+abline(h=0, col = "red", lwd = 2)
+```
+
+Usando el gráfico se puede observar que podría haber alguna tendencia en la data, y la prueba de Durbin-Watson muestra que las sospechas pueden ser ciertas, debido a que se rechaza la hipótesis nula.
+
+# Conclusión
+
+En este análisis, se optimizó un modelo de regresión lineal múltiple mediante la selección de variables utilizando los criterios AIC y BIC, identificando y eliminando datos influyentes que mejoraron la significancia estadística del modelo. El modelo ajustado muestra un aumento en el R² ajustado del 98.81% al 99.14% y un incremento en el estadístico F, lo que indica una mayor precisión en las predicciones. Además, las pruebas de validación confirmaron que los residuos siguen una distribución normal, tienen media cero, presentan homocedasticidad, mas hay sospechas de autocorrelación. Estos resultados sugieren que el modelo es adecuado para describir la relación entre las variables predictoras y la variable de respuesta, permitiendo realizar inferencias y predicciones con cierta confianza
