@@ -149,7 +149,7 @@ fa_minres_oblimin = fa(cor(df), nfactors = 2, rotate = "oblimin", fm = "minres")
 # communalities_minres = data.frame(NONE = fa_minres$communalities, VARIMAX = fa_minres_varimax$communalities, QUARTIMAX = fa_minres_quartimax$communalities, OBLIMIN = fa_minres_oblimin$communalities)
 # 
 # eigenvalues_mle = data.frame(NONE = fa_mle$values, VARIMAX = fa_mle_varimax$values, QUARTIMAX = fa_mle_quartimax$values, OBLIMIN = fa_mle_oblimin$values)
-# eigenvalues_minres = data.frame(NONE = fa_minres$values, VARIMAX = fa_minres_varimax$values, QUARTIMAX = fa_minres_quartimax$values, OBLIMIN = fa_minres_oblimin$values)
+# eigenvalues_minres = data.frame(NONE = fa_minres$values, 
 ```
 
 ```{r}

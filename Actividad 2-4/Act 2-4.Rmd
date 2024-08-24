@@ -1,0 +1,41 @@
+---
+title: "Actividad 2.4 Detección de datos influyentes"
+author: "Raúl Correa Ocañas"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Importación
+
+```{r}
+data = read.csv("../data/datosRes.csv")
+data
+```
+
+# Ejercicio 1.
+
+Selección de variables por pasos. Implementa la selección de variables por pasos seleccionando un criterio de evaluación de modelo. (AIC, BIC).
+
+```{r}
+
+y = data$Resistencia
+
+X = data.frame(cbind(data$Longitud, data$Altura.matriz, data$Altura.poste, data$Altura.amarre))
+
+ols = lm(y ~ ., data = X)
+```
+
+```{r}
+print("AIC")
+backwards_ols_aic = step(ols, direction = "backward", trace = 1)
+```
+
+```{r}
+print("BIC")
+n = length(y)
+backwards_ols_bic = step(ols, direction = "both", trace=1, k=log(n))
+```

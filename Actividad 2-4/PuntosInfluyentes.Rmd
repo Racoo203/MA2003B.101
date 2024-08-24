@@ -1,0 +1,269 @@
+---
+title: "Análisis de Puntos Influyentes en Regresión"
+author: "Rodolfo Fernández de Lara Hadad - Asistido por OpenAI ChatGPT y MS copilot"
+date: "15/ago/2024"
+output: html_document
+---
+
+## Introducción
+
+En el análisis de regresión, es fundamental identificar puntos de datos que puedan influir significativamente en los resultados del modelo. Estos puntos, conocidos como **puntos influyentes**, pueden alterar los coeficientes de regresión y afectar la interpretación del modelo.
+
+## Distancia de Cook
+
+La **distancia de Cook** es una medida utilizada para evaluar la influencia de un punto de datos en la estimación de los coeficientes de regresión. Se calcula como:
+
+$$
+D_i = \frac{\sum_{j=1}^{n} \left( \hat{y}_j - \hat{y}_{j(i)} \right)^2}{p \cdot \text{MSE}}
+$$
+
+Donde:
+- \( \hat{y}_j \) es el valor ajustado de la \( j \)-ésima observación usando todos los datos.
+- \( \hat{y}_{j(i)} \) es el valor ajustado de la \( j \)-ésima observación cuando el \( i \)-ésimo punto de datos es omitido.
+- \( p \) es el número de parámetros del modelo, incluyendo el intercepto.
+- \(\text{MSE}\) es el error cuadrático medio del modelo ajustado:
+
+$$
+\text{MSE} = \frac{\sum_{i=1}^{n} (y_i - \hat{y}_i)^2}{n - p}
+$$
+
+Alternativamente, la distancia de Cook se puede calcular usando:
+
+$$
+D_i = \frac{r_i^2}{p \cdot (1 - h_i)} \cdot \frac{h_i}{1 - h_i}
+$$
+
+Donde:
+- \( r_i \) es el residuo estandarizado para el \( i \)-ésimo punto de datos.
+- \( h_i \) es el valor de apalancamiento para el \( i \)-ésimo punto de datos.
+
+### Cálculo de la Distancia de Cook en R
+
+```{r}
+# Cargar el conjunto de datos
+data(mtcars)
+
+# Ajustar un modelo de regresión
+modelo <- lm(mpg ~ wt + hp, data=mtcars)
+
+# Calcular la distancia de Cook
+cooksd <- cooks.distance(modelo)
+
+# Visualizar la distancia de Cook
+plot(cooksd, type="h", main="Distancia de Cook", ylab="Distancia de Cook")
+abline(h = 1, col="red") # Límite comúnmente usado
+```
+
+## Ejemplo de detección de datos influyentes
+
+Para este ejemplo, crearemos un conjunto de datos simulado que incluye puntos influyentes.
+
+```{r}
+# Generar datos simulados
+set.seed(123)
+
+# Crear un conjunto de datos con un patrón lineal
+n <- 100
+x <- rnorm(n)
+y <- 3 * x + rnorm(n)
+
+# Añadir puntos influyentes
+x[c(10, 20, 30)] <- c(5, -7, 10)
+y[c(10, 20, 30)] <- c(19, -17, 22)
+
+# Crear un data frame
+datos <- data.frame(x = x, y = y)
+
+# Visualizar los datos
+plot(x, y, main = "Datos Simulados con Puntos Influyentes")
+
+# Ajustar el modelo de regresión
+modelo <- lm(y ~ x, data=datos)
+
+# Resumen del modelo
+summary(modelo)
+
+# Calcular la distancia de Cook
+cooksd <- cooks.distance(modelo)
+
+# Mostrar la distancia de Cook
+print(cooksd)
+
+# Visualizar la distancia de Cook
+plot(cooksd, type="h", main="Distancia de Cook", ylab="Distancia de Cook")
+abline(h = 1, col="red") # Umbral de 1 para puntos influyentes
+
+# Identificar puntos influyentes
+puntos_influyentes <- which(cooksd > 1)
+puntos_influyentes
+
+# Mostrar las observaciones influyentes
+datos[puntos_influyentes, ]
+```
+
+### Interpretación
+
+En este ejemplo, las observaciones que tienen una distancia de Cook mayor a 1 son consideradas influyentes. Estos puntos pueden tener un efecto desproporcionado en el ajuste del modelo y deberían investigarse para entender su impacto.
+
+### Conclusión
+
+La distancia de Cook es una herramienta valiosa para identificar observaciones influyentes en un modelo de regresión. Al establecer un umbral de 1, podemos detectar puntos que afectan significativamente el modelo y tomar medidas adecuadas para garantizar la robustez del análisis.
+
+
+
+## Apalancamiento (leverage)
+
+En el análisis de regresión, el **apalancamiento** es una medida que indica cuánto afecta una observación al ajuste del modelo, basándose en su posición en el espacio de las variables independientes. El apalancamiento ayuda a identificar observaciones que pueden tener un efecto desproporcionado en la estimación de los coeficientes del modelo.
+
+## Concepto de Apalancamiento
+
+La **matriz sombrero** (\( \mathbf{H} \)) es clave en el cálculo del apalancamiento. Está definida como:
+
+$$
+\mathbf{H} = \mathbf{X}(\mathbf{X}^\top \mathbf{X})^{-1} \mathbf{X}^\top
+$$
+
+Donde \( \mathbf{X} \) es la matriz de diseño del modelo de regresión. El apalancamiento para la \( i \)-ésima observación es el valor \( h_{ii} \) en la diagonal de la matriz sombrero, y se calcula como:
+
+$$
+h_i = \mathbf{x}_i (\mathbf{X}^\top \mathbf{X})^{-1} \mathbf{x}_i^\top
+$$
+
+Una observación se considera que tiene **alto apalancamiento** si \( h_i \) es grande. Un umbral comúnmente utilizado es:
+
+$$
+h_i > \frac{2p}{n}
+$$
+
+donde \( p \) es el número de parámetros del modelo, incluyendo el intercepto, y \( n \) es el número total de observaciones.
+
+## Cálculo del Apalancamiento en R
+
+```{r}
+# Cargar el conjunto de datos
+data(mtcars)
+
+# Ajustar un modelo de regresión
+modelo <- lm(mpg ~ wt + hp, data=mtcars)
+
+# Calcular los valores de apalancamiento
+leverage <- hatvalues(modelo)
+
+# Visualizar los valores de apalancamiento
+plot(leverage, type="h", main="Valores de Apalancamiento", ylab="Apalancamiento")
+abline(h = 2*mean(leverage), col="red") # Límite comúnmente usado
+
+# Identificar observaciones con alto apalancamiento
+high_leverage_points <- which(leverage > 2*mean(leverage))
+high_leverage_points
+```
+
+### ejemplo con datos de apalancamiento alto
+
+```{r}
+# Generar datos simulados
+set.seed(123)
+n <- 100
+x <- rnorm(n, mean = 5, sd = 2)
+y <- 3 + 2 * x + rnorm(n)
+
+# Crear un data frame con los datos
+datos <- data.frame(x, y)
+
+# Ajustar un modelo de regresión lineal
+modelo <- lm(y ~ x, data = datos)
+
+# Calcular los valores de leverage
+leverage <- hatvalues(modelo)
+
+# Identificar los puntos con leverage alto (por ejemplo, leverage > 2*(p/n))
+p <- length(coef(modelo))
+umbral <- 2 * p / n
+outliers <- which(leverage > umbral)
+
+# Mostrar los puntos con leverage alto
+print(outliers)
+
+# Graficar los datos y resaltar los outliers
+plot(x, y, main = "Detección de Outliers usando Leverage",
+     xlab = "Variable X", ylab = "Variable Y", pch = 19)
+abline(modelo, col = "blue")
+points(x[outliers], y[outliers], col = "red", pch = 19, cex = 1.5)
+```
+
+
+## Dfbetas
+
+En el análisis de regresión, **DFBETAS** es una medida que indica la influencia que tiene cada observación sobre los coeficientes estimados del modelo. Específicamente, mide el cambio estandarizado en un coeficiente de regresión cuando se elimina una observación del conjunto de datos.
+
+## Concepto de DFBETAS
+
+Para un coeficiente de regresión \( \beta_j \), DFBETAS para la \( i \)-ésima observación se calcula como:
+
+$$
+\text{DFBETAS}_{ij} = \frac{\beta_j - \beta_{j(i)}}{\text{SE}(\beta_j(i))}
+$$
+
+Donde:
+- \( \beta_j \) es el coeficiente estimado usando todos los datos.
+- \( \beta_{j(i)} \) es el coeficiente estimado después de eliminar la \( i \)-ésima observación.
+- \(\text{SE}(\beta_j(i))\) es el error estándar del coeficiente estimado después de eliminar la \( i \)-ésima observación.
+
+### Interpretación de DFBETAS
+
+- **Valores cercanos a 0:** Indican que la observación no tiene un efecto significativo en el coeficiente de regresión.
+- **Valores absolutos mayores a 1:** Sugerirían que la observación tiene un impacto considerable en el coeficiente. Este umbral es una regla general, y en conjuntos de datos más grandes, un valor más conservador como \( \frac{2}{\sqrt{n}} \) puede ser utilizado, donde \( n \) es el número de observaciones.
+
+## Cálculo de DFBETAS en R
+
+```{r}
+# Cargar el conjunto de datos
+data(mtcars)
+
+# Ajustar un modelo de regresión
+modelo <- lm(mpg ~ wt + hp, data=mtcars)
+
+# Calcular DFBETAS
+dfbetas_values <- dfbetas(modelo)
+
+# Visualizar DFBETAS para el coeficiente de 'wt'
+plot(dfbetas_values[, "wt"], type="h", main="DFBETAS para el coeficiente de 'wt'", ylab="DFBETAS")
+abline(h = c(-1, 1), col="red") # Límites comunes
+
+# Identificar observaciones influyentes para el coeficiente de 'wt'
+influential_points <- which(abs(dfbetas_values[, "wt"]) > 1)
+influential_points
+```
+
+Otro ejemplo con puntos influyentes.
+
+```{r}
+# Generar datos simulados
+set.seed(123)
+n <- 100
+x <- rnorm(n, mean = 5, sd = 2)
+y <- 3 + 2 * x + rnorm(n)
+
+# Crear un data frame con los datos
+datos <- data.frame(x, y)
+
+# Ajustar un modelo de regresión lineal
+modelo <- lm(y ~ x, data = datos)
+
+# Calcular los valores de dfbetas
+dfbetas_values <- dfbetas(modelo)
+
+# Identificar los puntos con dfbetas altos (por ejemplo, dfbetas > 2/sqrt(n))
+umbral <- 2 / sqrt(n)
+outliers <- which(abs(dfbetas_values[, 2]) > umbral)  # dfbetas para el coeficiente de x
+
+# Mostrar los puntos con dfbetas altos
+print(outliers)
+
+# Graficar los datos y resaltar los outliers
+plot(x, y, main = "Detección de Outliers usando DFBETAS",
+     xlab = "Variable X", ylab = "Variable Y", pch = 19)
+abline(modelo, col = "blue")
+points(x[outliers], y[outliers], col = "red", pch = 19, cex = 1.5)
+```
+
