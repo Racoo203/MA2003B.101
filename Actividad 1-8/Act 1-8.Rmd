@@ -1,0 +1,41 @@
+---
+title: "Actividad 1.8 Análisis Factorial II"
+author: "Raúl Correa Ocañas"
+date: "2024-08-25"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(MVN)
+library(psych)
+# library(polycor)
+# library(ggcorrplot)
+# library(performance)
+# library(GPArotation)
+```
+
+# Importacion
+
+```{r}
+dataset = read.csv("../data/cars93.csv")
+dataset
+```
+
+
+```{r}
+dataset_limpio = na.omit(dataset)
+dataset_limpio = dataset_limpio[,c(-8, -9)]
+dataset_limpio
+```
+
+```{r}
+result = mvn(dataset_limpio, mvnTest = "mardia", alpha = 0.05)
+result$multivariateNormality
+result$univariateNormality
+```
+
+```{r}
+corr.test(dataset_limpio)
+```
+
