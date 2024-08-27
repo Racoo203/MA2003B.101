@@ -1,0 +1,52 @@
+---
+title: "MLR_G301"
+author: "Mónica Elizondo"
+date: "6/11/2023"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+```{r}
+library(caret)
+library(MASS)
+
+M=read.csv("../data/kc_house_data.csv")
+head(M)
+str(M)
+
+#Remover observaciones con precio mayor a  $1.5M
+M <- subset(M, price <= 1500000) 
+
+#Agregar una nueva variable categórica: Category
+M$Category <- factor(ifelse(M$price < 500000, "low", ifelse(M$price < 1000000, "medium","high")))
+
+#Estructura de los datos
+str(M)
+
+# Nombres de columnas del data set
+all_cols <- names(M)
+
+#Crear un data frame para la columna categoría
+Category <- data.frame(M[,22])
+
+#Se eliminan las primeras tres columnas (ID, Date, y Category)
+M <-M[,-c(1:3,22)]
+
+# Identificar variables con varianza cercana a cero: remove_cols
+remove_cols <- nearZeroVar(M)
+
+# Remover variables con varianza cercana a cero
+M2 <- M[,-remove_cols]
+
+
+#Agregar la variable categoría al data frame
+M2$Category <- Category[,1]
+
+
+
+```
+

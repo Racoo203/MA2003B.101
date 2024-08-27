@@ -1,0 +1,272 @@
+---
+title: "Análisis Discriminante"
+author: "Rodolfo Fernández de Lara Hadad - asistido por IA"
+date: "2024-08-20"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r datos}
+
+rm(list=ls())
+# Generar base de datos simulada
+set.seed(123)
+data <- data.frame(
+  Group = sample(c("A", "B", "C"), 500, replace = TRUE),
+  Var1 = rnorm(500, mean = 50, sd = 10),
+  Var2 = rnorm(500, mean = 100, sd = 20),
+  Var3 = rnorm(500, mean = 5, sd = 2)
+)
+
+# Muestreo aleatorio
+set.seed(456)
+sampled_data <- data[sample(nrow(data), 300), ]
+
+# Gráfico de dispersión
+library(ggplot2)
+ggplot(data, aes(x = Var1, y = Var2, color = Group)) +
+  geom_point() +
+  labs(title = "Segmentación Original de los Datos", x = "Var1", y = "Var2")
+
+# Medias por grupo
+group_means <- aggregate(. ~ Group, data = sampled_data, mean)
+group_means
+
+
+# Probabilidades a priori
+priors <- prop.table(table(sampled_data$Group))
+priors
+```
+
+en el análisis discriminante, las probabilidades a priori ayudan a mejorar la precisión del modelo al ajustar las decisiones de clasificación según la frecuencia esperada de cada clase, lo que es particularmente importante en conjuntos de datos desbalanceados.
+
+
+```{r procesoLDA}
+# Análisis discriminante
+library(MASS)
+lda_model <- lda(Group ~ Var1 + Var2 + Var3, data = sampled_data)
+lda_model
+```
+
+## Interpretación de los Coeficientes en Análisis Discriminante   ## Lineal (LDA)
+
+En el Análisis Discriminante Lineal (LDA), los "coefficients of linear discriminant" (coeficientes de la función discriminante lineal) son los valores que multiplican a cada variable predictora en la(s) función(es) discriminante(s) lineal(es). Estos coeficientes permiten proyectar los datos multivariados en un espacio de menor dimensión para maximizar la separación entre las clases.
+
+### Construcción de la Función Discriminante
+
+Los coeficientes obtenidos en un modelo LDA son utilizados para construir una o más funciones discriminantes lineales (dependiendo del número de clases), que se expresan de la siguiente manera:
+
+\[
+L_k(\mathbf{x}) = \beta_{k0} + \beta_{k1}x_1 + \beta_{k2}x_2 + \cdots + \beta_{kp}x_p
+\]
+
+Donde:
+- \(L_k(\mathbf{x})\) es la función discriminante lineal para la clase \(k\).
+- \(\beta_{k0}\) es el término independiente (intercepto) para la clase \(k\).
+- \(\beta_{ki}\) es el coeficiente asociado a la \(i\)-ésima variable predictora \(x_i\) en la función discriminante para la clase \(k\).
+- \(p\) es el número de variables predictoras.
+
+### Signo y Magnitud de los Coeficientes
+
+- **Signo del Coeficiente**: El signo de un coeficiente indica la dirección de la relación entre la variable predictora y la función discriminante. Un coeficiente positivo sugiere que, al aumentar el valor de la variable, aumenta la probabilidad de pertenecer a la clase para la cual se define esa función discriminante, mientras que un coeficiente negativo sugiere lo contrario.
+  
+- **Magnitud del Coeficiente**: La magnitud del coeficiente indica la importancia relativa de la variable predictora en la discriminación entre clases. Coeficientes de mayor magnitud sugieren que la variable tiene un mayor impacto en la separación de las clases. Variables con coeficientes cercanos a cero tienen un efecto menor en la discriminación.
+
+### Separación de Clases
+
+En un contexto multiclase, donde hay más de dos clases, cada clase tiene su propia función discriminante. Las funciones discriminantes se utilizan para proyectar las observaciones en un nuevo espacio donde se busca maximizar la separación entre las clases. Las observaciones se clasifican según la función discriminante con el mayor valor para cada observación.
+
+### Ejemplo de Interpretación
+
+Supongamos que un modelo LDA se ajusta con tres variables predictoras \(x_1\), \(x_2\), y \(x_3\), y se obtiene la siguiente función discriminante para la clase \(k\):
+
+\[
+L_k(\mathbf{x}) = 1.5 + 2.0x_1 - 0.5x_2 + 1.2x_3
+\]
+
+En este caso:
+- \(x_1\) tiene el mayor impacto positivo en la función discriminante (con un coeficiente de 2.0), lo que indica que a medida que \(x_1\) aumenta, la probabilidad de que la observación pertenezca a la clase \(k\) aumenta significativamente.
+- \(x_2\) tiene un efecto negativo en la función discriminante, lo que significa que valores más altos de \(x_2\) reducen la probabilidad de pertenecer a la clase \(k\).
+- \(x_3\) también tiene un impacto positivo, aunque menor que \(x_1\).
+
+### Proyección y Dimensionalidad
+
+En el LDA, estas funciones discriminantes proyectan los datos en un espacio de menor dimensión (a menudo 1D o 2D) que mejor separa las clases. Los coeficientes determinan cómo los datos originales se transforman en este espacio de proyección.
+
+### Resumen
+
+Los coeficientes de la función discriminante lineal en LDA indican la importancia y la dirección de la influencia de cada variable predictora en la discriminación entre clases. Estos coeficientes se utilizan para construir las funciones discriminantes que proyectan los datos en un nuevo espacio, facilitando la clasificación de nuevas observaciones según la clase más probable.
+
+
+## Proportion of Trace en Análisis Discriminante Lineal (LDA)
+
+En el contexto del Análisis Discriminante Lineal (LDA), el término **"proportion of trace"** (proporción de la traza) se refiere a la proporción de la varianza total explicada por cada función discriminante lineal (LDF). Este concepto está relacionado con la capacidad de cada función discriminante para separar las clases.
+
+### Contexto y Definición
+
+1. **Matriz de Varianza-Covarianza:**
+
+   En LDA, el análisis implica la descomposición de la matriz de varianza-covarianza total en componentes que pueden ser explicados por las diferencias entre clases (varianza explicada) y la variabilidad dentro de las clases (varianza no explicada).
+
+2. **Autovalores y Funciones Discriminantes:**
+
+   Cada función discriminante lineal se asocia con un autovalor (\(\lambda\)), que indica cuánta varianza entre clases es explicada por esa función discriminante. Cuanto mayor es el autovalor, mayor es la capacidad de esa función discriminante para separar las clases.
+
+3. **Traza de la Matriz:**
+
+   La traza de una matriz es la suma de sus elementos diagonales. En este caso, la traza se refiere a la suma de los autovalores de todas las funciones discriminantes obtenidas en el análisis. La traza total representa la suma de la varianza explicada por todas las funciones discriminantes.
+
+4. **Proporción de la Traza:**
+
+   La "proportion of trace" para cada función discriminante es la proporción del autovalor de esa función respecto a la traza total (suma de todos los autovalores). Se calcula como:
+
+   \[
+   \text{Proportion of Trace} = \frac{\lambda_i}{\sum_{j=1}^{p} \lambda_j}
+   \]
+
+   Donde:
+   - \(\lambda_i\) es el autovalor de la \(i\)-ésima función discriminante.
+   - \(p\) es el número total de funciones discriminantes (que es el menor entre el número de clases menos uno y el número de variables predictoras).
+
+### Interpretación
+
+- **Medida de Importancia:** La proporción de la traza indica qué porcentaje de la varianza total explicada se atribuye a una función discriminante específica. Una proporción más alta significa que esa función tiene un mayor poder discriminante y, por lo tanto, es más efectiva para separar las clases.
+
+- **Selección de Funciones Relevantes:** En un análisis con múltiples funciones discriminantes, es común que solo las primeras (aquellas con la mayor proporción de la traza) sean relevantes para la interpretación, ya que suelen capturar la mayor parte de la varianza entre las clases. Las funciones con una baja proporción de la traza pueden tener una capacidad discriminante limitada.
+
+- **Ejemplo Práctico:** Si la primera función discriminante tiene un autovalor que representa el 70% de la traza total, se podría decir que esta función explica el 70% de la variabilidad entre las clases, y es la función más importante para la discriminación. La segunda función discriminante podría explicar, por ejemplo, el 20%, y así sucesivamente.
+
+En resumen, **"proportion of trace"** es una medida de la importancia relativa de cada función discriminante lineal en la separación de clases, basada en la varianza explicada por cada función en relación con la varianza total explicada.
+
+
+
+
+```{r evaluLDA}
+# Histograma de valores discriminantes
+predicted_values <- predict(lda_model)$x
+sampled_data$LDA1 <- predicted_values[,1]
+
+ggplot(sampled_data, aes(x = LDA1, fill = Group)) +
+  geom_histogram(binwidth = 0.5, alpha = 0.7, position = "identity") +
+  labs(title = "Histograma de Valores Discriminantes", x = "LDA1", y = "Frecuencia")
+```
+
+## Histograma de valores discriminantes
+
+Un histograma de valores discriminantes muestra la distribución de los valores discriminantes para cada clase. 
+Interpretación:
+### Ejes del Histograma:
+Eje X: Representa los valores discriminantes.
+Eje Y: Representa la frecuencia o el número de observaciones que caen en cada intervalo de valores discriminantes.
+### Separación de Clases:
+Si las distribuciones de las clases están bien separadas en el histograma, significa que el LDA está funcionando bien para discriminar entre las clases.
+Si hay mucha superposición entre las distribuciones de las clases, puede indicar que el LDA no está separando bien las clases.
+### Forma de las Distribuciones:
+Las distribuciones deberían idealmente ser unimodales (una sola cima) y simétricas para cada clase.
+Si las distribuciones son multimodales o asimétricas, puede ser una señal de que hay subgrupos dentro de las clases o que los datos no siguen una distribución normal.
+### Análisis de Errores:
+Observa las áreas de superposición entre las distribuciones de las clases. Estas áreas indican posibles errores de clasificación.
+Cuanto menor sea la superposición, mejor será la capacidad del modelo para discriminar entre las clases.
+
+
+```{r segmentLDA}
+# Segmentación predicha por el modelo
+predictions <- predict(lda_model)$class
+sampled_data$Prediction <- predictions
+
+ggplot(sampled_data, aes(x = Var1, y = Var2, color = Prediction)) +
+  geom_point() +
+  labs(title = "Segmentación Predicha por el Modelo", x = "Var1", y = "Var2")
+
+
+# Visualización de la segmentación y predicciones
+# Crear un data frame para la visualización
+df_viz <- data.frame(
+  LD1 = predicted_values[,1],
+  LD2 = predicted_values[,2],
+  Group = sampled_data$Group,
+  Prediction = sampled_data$Prediction
+)
+
+# Visualizar la segmentación y las predicciones
+ggplot(df_viz, aes(x = LD1, y = LD2, color = Group, shape = Prediction)) +
+  geom_point(size = 3) +
+  labs(title = "Segmentación y Predicciones del Modelo LDA",
+       x = "Discriminante Lineal 1",
+       y = "Discriminante Lineal 2") +
+  theme_minimal()
+
+
+# Evaluación del modelo
+conf_matrix <- table(sampled_data$Group, sampled_data$Prediction)
+conf_matrix
+
+accuracy <- sum(diag(conf_matrix)) / sum(conf_matrix)
+error_rate <- 1 - accuracy
+
+accuracy
+error_rate
+
+# Calcular sensibilidad y especificidad para cada clase
+sensibilidad <- function(conf_matrix, clase) {
+  TP <- conf_matrix[clase, clase]
+  FN <- sum(conf_matrix[clase, ]) - TP
+  TP / (TP + FN)
+}
+
+especificidad <- function(conf_matrix, clase) {
+  TN <- sum(conf_matrix) - sum(conf_matrix[, clase]) - sum(conf_matrix[clase, ]) + conf_matrix[clase, clase]
+  FP <- sum(conf_matrix[, clase]) - conf_matrix[clase, clase]
+  TN / (TN + FP)
+}
+
+
+# Aplicar las funciones a cada clase
+clases <- rownames(conf_matrix)
+sensibilidades <- sapply(clases, sensibilidad, conf_matrix = conf_matrix)
+especificidades <- sapply(clases, especificidad, conf_matrix = conf_matrix)
+
+sensibilidades
+especificidades
+
+```
+
+Sensibilidad: Proporción de verdaderos positivos (TP) sobre la suma de verdaderos positivos y falsos negativos (FN).
+
+Especificidad: Proporción de verdaderos negativos (TN) sobre la suma de verdaderos negativos y falsos positivos (FP).
+
+
+
+Verificación de Supuestos
+Para verificar estos supuestos, puedes realizar las siguientes pruebas y análisis:
+
+Normalidad Multivariante: Prueba de Henze-Zirkler o análisis gráfico como el Q-Q plot multivariante.
+Homocedasticidad: Prueba de Box’s M.
+Independencia: Asegurarte de que el diseño del estudio o la recolección de datos garantice la independencia.
+Linealidad: Análisis gráfico y pruebas de linealidad.
+Multicolinealidad: Calcular el factor de inflación de la varianza (VIF) para las variables predictoras.
+
+
+
+```{r supuestos}
+# Validación de supuestos
+library(MVN)
+mvn(sampled_data[, c("Var1", "Var2", "Var3")])
+
+# Verificación de homocedasticidad
+library(heplots)
+boxM(sampled_data[, c("Var1", "Var2", "Var3")], sampled_data$Group)
+
+# Prueba de linealidad
+# Gráficos de dispersión para cada par de variables por grupo
+#pairs(sampled_data[, c("Var1", "Var2", "Var3")], #col=sampled_data$Group)
+
+# Prueba de multicolinealidad
+#library(car)
+#vif_model <- lm(Group ~ Var1 + Var2 + Var3, data = sampled_data)
+#vif(vif_model)
+
+```

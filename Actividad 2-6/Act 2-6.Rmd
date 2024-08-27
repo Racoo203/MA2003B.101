@@ -1,0 +1,56 @@
+---
+title: "Actividad 2.6. Análisis discriminante"
+author: "Raúl Correa Ocañas"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(caret)
+library(MASS)
+```
+
+# Importación
+```{r}
+dataset = read.csv("../data/kc_house_data.csv")
+summary(dataset)
+head(dataset, 5)
+```
+
+1- Designa tu variable categórica como variable dependiente para una clasificación y tus variables numéricas como variables independientes.
+
+```{r}
+#Remover observaciones con precio mayor a $1.5M
+dataset = subset(dataset, price <= 1500000) 
+
+#Agregar una nueva variable categórica: Category
+dataset$Category <- factor(ifelse(dataset$price < 500000, "low", ifelse(dataset$price < 1000000, "medium","high")))
+
+all_cols <- names(dataset)
+
+#Crear un data frame para la columna categoría
+Category <- data.frame(dataset[,22])
+
+#Se eliminan las primeras tres columnas (ID, Date, y Category)
+temp = dataset[,-c(1:3,22)]
+
+# Identificar variables con varianza cercana a cero: remove_cols
+remove_cols <- nearZeroVar(temp)
+
+# Remover variables con varianza cercana a cero
+dataset = dataset[,-remove_cols]
+
+#Agregar la variable categoría al data frame
+dataset$Category <- Category[,1]
+
+head(dataset,3)
+```
+
+2. Acota tu base de datos realizando un muestreo aleatorio de 300 observaciones.
+
+```{r}
+
+
+```
+
