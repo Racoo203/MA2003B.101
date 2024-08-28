@@ -9,6 +9,13 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 library(caret)
 library(MASS)
+library(ggplot2)
+library(dplyr)
+library(MVN)
+library(heplots)
+library(car)
+
+set.seed(420)
 ```
 
 # Importación
@@ -50,7 +57,158 @@ head(dataset,3)
 2. Acota tu base de datos realizando un muestreo aleatorio de 300 observaciones.
 
 ```{r}
+sampled_index = sample(1:nrow(dataset), 300)
+sampled_dataset = dataset[sampled_index,]
+# head(sampled_dataset, 5)
+
+y = sampled_dataset[,"Category"]
+
+X = select_if(sampled_dataset, is.numeric)
+X = X[,which(names(X) != "price")]
 
 
+sampled_dataset = data.frame(cbind(X, y))
+names(sampled_dataset)[names(sampled_dataset) == 'y'] <- 'Groups'
+head(sampled_dataset,3)
 ```
 
+# 3.- Muestre gráficamente la segmentación original de los datos. Realiza un gráfico de dispersión donde se identifiquen las diferentes categorías de tu base de datos. ¿Qué variable o variables discriminan mejor?
+
+```{r}
+ggplot(sampled_dataset, aes(x = yr_built, y = sqft_living15, color = Groups)) +
+  geom_point() +
+  labs(title = "Segmentación Original de los Datos", x = "Var1", y = "Var2")
+```
+
+# 4.- Realiza un análisis discriminante para responder las siguientes preguntas:
+
+## a) Obtenga la media para cada variable predictora en función del grupo (puede utilizar la función tapply)
+
+```{r}
+# Medias por grupo
+group_means = aggregate(. ~ Groups, data = sampled_dataset, mean)
+group_means
+```
+
+
+## b) Muestre las probabilidades a priori para las diferentes clases, es decir, la distribución de datos en función de la variable dependiente, utilice la función prop.table(table())
+
+```{r}
+# Probabilidades a priori
+priors = prop.table(table(sampled_dataset$Groups))
+priors
+```
+
+
+## c) Determine y escriba la(s) funcion(es) lineal(es) discriminante(s).
+
+```{r}
+lda_model <- lda(y ~ ., data = as.data.frame(X))
+lda_model
+```
+
+Las funciones discriminantes lineales se determinaron utilizando las variables predictoras. Los coeficientes asociados a cada variable indican la dirección y magnitud con la que cada variable contribuye a la discriminación entre los grupos.
+
+## d) Grafique el histograma de valores discriminantes en cada grupo.
+
+```{r}
+valores_discriminantes <- predict(lda_model)$x
+
+sampled_dataset$Discriminante <- valores_discriminantes[,1]  # Primer valor discriminante
+
+ggplot(sampled_dataset, aes(x = Discriminante, fill = Groups)) +
+  geom_histogram(bins = 30, position = "dodge") +
+  labs(title = "Histograma de Valores Discriminantes por Grupo") +
+  theme_minimal()
+
+predicted_values <- predict(lda_model)$x
+sampled_dataset$LDA1 <- predicted_values[,1]
+
+ggplot(sampled_dataset, aes(x = LDA1, fill = Groups)) +
+  geom_histogram(binwidth = 0.5, alpha = 0.7, position = "identity") +
+  labs(title = "Histograma de Valores Discriminantes", x = "LDA1", y = "Frecuencia")
+```
+
+## e) Muestre gráficamente la segmentación de los datos. Realiza el gráfico de dispersión con las predicciones hechas por el modelo.
+
+```{r}
+predictions <- predict(lda_model)$class
+sampled_dataset$Prediction <- predictions
+
+# Visualización de la segmentación y predicciones
+# Crear un data frame para la visualización
+df_viz <- data.frame(
+  LD1 = predicted_values[,1],
+  LD2 = predicted_values[,2],
+  Group = sampled_dataset$Groups,
+  Prediction = sampled_dataset$Prediction
+)
+
+# Visualizar la segmentación y las predicciones
+ggplot(df_viz, aes(x = LD1, y = LD2, color = Group, shape = Prediction)) +
+  geom_point(size = 3) +
+  labs(title = "Segmentación y Predicciones del Modelo LDA",
+       x = "Discriminante Lineal 1",
+       y = "Discriminante Lineal 2") +
+  theme_minimal()
+```
+
+## f) Evalúe la precisión del modelo. ¿El modelo es bueno para pronosticar? Indique el porcentaje de predicciones erróneas y la tabla de contingencia.
+
+```{r}
+# Evaluación del modelo
+conf_matrix <- table(sampled_dataset$Groups, sampled_dataset$Prediction)
+conf_matrix
+
+accuracy <- sum(diag(conf_matrix)) / sum(conf_matrix)
+error_rate <- 1 - accuracy
+
+accuracy
+error_rate
+
+# Calcular sensibilidad y especificidad para cada clase
+sensibilidad <- function(conf_matrix, clase) {
+  TP <- conf_matrix[clase, clase]
+  FN <- sum(conf_matrix[clase, ]) - TP
+  TP / (TP + FN)
+}
+
+especificidad <- function(conf_matrix, clase) {
+  TN <- sum(conf_matrix) - sum(conf_matrix[, clase]) - sum(conf_matrix[clase, ]) + conf_matrix[clase, clase]
+  FP <- sum(conf_matrix[, clase]) - conf_matrix[clase, clase]
+  TN / (TN + FP)
+}
+
+
+# Aplicar las funciones a cada clase
+clases <- rownames(conf_matrix)
+sensibilidades <- sapply(clases, sensibilidad, conf_matrix = conf_matrix)
+especificidades <- sapply(clases, especificidad, conf_matrix = conf_matrix)
+
+sensibilidades
+especificidades
+```
+
+El modelo mostró una precisión del 81.67%, con un 18.33% de predicciones erróneas. La confusión entre las categorías medium y low fue la más común, reflejada en la matriz de confusión. Aunque no están tan incorrectas las predicciones, el análisis de supuestos puede terminar de afirmar si el modelo es adecuado a los datos.
+
+# 5. Valide los supuestos del modelo 
+
+Prueba de Henze-Zirkler o análisis gráfico como el Q-Q plot multivariante. 
+Homocedasticidad: Prueba de Box's M. 
+Independencia: Asegurarte de que el diseño del estudio o la recolección de datos garantice la independencia. Linealidad: Análisis gráfico y pruebas de linealidad. Multicolinealidad: Calcular el factor de inflación de la varianza (VIF) para las variables predictoras.
+
+```{r}
+mvn(sampled_dataset[,names(X)])
+boxM(sampled_dataset[,names(X)], sampled_dataset[,"Groups"])
+# pairs(sampled_dataset[, names(X)], col=sampled_dataset$Groups)
+vif_model = lm(sampled_dataset$Groups ~ ., data = sampled_dataset[,names(X)])
+vif(vif_model)
+```
+
+Normalidad Multivariante: La prueba de Henze-Zirkler reveló que los datos no siguen una normalidad multivariante.
+
+
+Homogeneidad de las Covarianzas: La prueba de Box's M indicó que no se cumple la homogeneidad de las matrices de covarianza entre los grupos.
+
+
+Multicolinealidad: Se observaron problemas de multicolinealidad entre algunas variables predictoras, como lo indicó el cálculo del VIF .
