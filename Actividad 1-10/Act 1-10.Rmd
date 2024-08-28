@@ -1,0 +1,65 @@
+---
+title: "Actividad 1.10 Conglomerados no jerárquicos"
+author: "Raúl Correa Ocañas"
+date: "2024-08-28"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(factoextra)
+```
+
+# Cargar Datos
+
+```{r}
+M = read.csv("../data/TLA2021.csv")
+# names(M)
+M1 = M[, -1]  # quitando la columna de fecha
+Mstand = scale(x = M1, center = TRUE, scale = TRUE)
+head(Mstand,3)
+```
+
+# KMEANS
+
+```{r}
+
+M1f = data.frame(Mstand)  # Se convierte la matriz Mstand a un data.frame porque así lo requiere la función kmeans.
+
+centers_list = 2:5
+ellipses = c('convex','confidence')
+
+for (centers in centers_list) {
+  for (ellipse_type in ellipses) {
+    km_clusters = kmeans(M1f, centers = centers)
+    print(fviz_cluster(object = km_clusters, 
+                       data = M1f, 
+                       show.clust.cent = TRUE, 
+                       ellipse.type = ellipse_type, 
+                       star.plot = FALSE, 
+                       repel = TRUE, 
+                       geom = "point") + 
+          ggtitle(paste("K-means clustering with", centers, "centers and Ellipse Type: ", ellipse_type)))
+  }
+}
+```
+```{r}
+# Elbow method
+fviz_nbclust(M1f, kmeans, method = "wss") +
+    geom_vline(xintercept = 4, linetype = 2)+
+  labs(subtitle = "Elbow method")
+
+# Silhouette method
+fviz_nbclust(M1f, kmeans, method = "silhouette")+
+  labs(subtitle = "Silhouette method")
+```
+
+En este análisis de conglomerados no jerárquicos, se utilizaron los métodos de K-means junto con las técnicas del Codo y de Silhouette para determinar el número óptimo de clusters en los datos estandarizados. Ambos métodos sugieren la posibilidad de elegir entre 2 o 4 conglomerados.
+
+La gráfica del método del Codo muestra una disminución significativa en la suma total de cuadrados dentro del cluster al pasar de 2 a 3 clusters. Sin embargo, la reducción en TSS se vuelve menos pronunciada a partir del tercer cluster, lo que sugiere que 2 o 4 clusters podrían ser opciones razonables. El punto de inflexión más claro se encuentra en 4 clusters, lo que indicaría que esta opción podría ser más adecuada si se prioriza la reducción de la variabilidad dentro de los clusters.
+
+La gráfica del método de Silhouette indica que el coeficiente promedio de Silhouette es más alto para la solución de 2 clusters. Esto sugiere que los grupos formados cuando se eligen 2 clusters son más homogéneos y están mejor separados entre sí, lo que es indicativo de una mejor calidad de agrupamiento.
+
+Al observar las gráficas de los clusters generadas por K-means, se nota que la opción de 2 clusters proporciona una separación más clara y lógica entre los grupos. La opción de 4 clusters, aunque válida, podría sobreajustar los datos, dividiendo grupos que quizás no estén tan bien definidos.
+
+Decisión Final: Considerando los resultados de ambos métodos y la inspección visual, se concluye que la solución de 2 clusters es la más adecuada para este conjunto de datos. Esta configuración no solo asegura una separación clara entre los grupos, sino que también evita la posibilidad de crear clusters innecesarios que podrían complicar la interpretación y el análisis posterior.
