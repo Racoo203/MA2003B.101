@@ -63,31 +63,86 @@ e3 = NA
 p3[1]=y[1]
 p3[2]=y[1]
 
-alfas = 0.05:0.5:0.05
+alfas = seq(0.05,0.5,0.01)
 
 for (a in alfas) {
   for(i in 3:n){
     p3[i]=a*y[i-1]+(1-a)*p3[i-1]; e3[i] = y[i]- p3[i]
   }
-  # 
-  # smooth_exp = data.frame(t,y,p3,e3^2)
-  # smooth_exp
   
   CME=mean(e3^2,na.rm=TRUE)
-  print(CME)
-  # 
-  # plot(t, y, type="o", col="red")
-  # x3 = 2:n
-  # lines(x3,p3[x3],type="o",col="blue")
+  print(paste(a, ": ",round(CME, 4)))
 }
 
-
 ```
+```{r}
 
+best_a = 0.17
+
+for(i in 3:(n+1)){
+  p3[i]=best_a*y[i-1]+(1-best_a)*p3[i-1]; e3[i] = y[i]- p3[i]
+}
+
+# smooth_exp = data.frame(t,y,p3,e3^2)
+# smooth_exp
+
+CME=mean(e3^2,na.rm=TRUE)
+print(paste("CME:",CME))
+
+plot(t, y, type="o", col="red")
+x3 = 2:(n+1)
+lines(x3,p3[x3],type="o",col="blue")
+
+print(paste("Pred:", p3[length(p3)]))  
+```
 
 # Ejercicio 2
 
 ```{r}
+ventas = c(4.8, 4.1, 6, 6.5, 5.8, 5.2, 6.8, 7.4, 6, 5.6, 7.5, 7.8, 6.3, 5.9, 8, 8.4)
+x= ts(ventas, frequency = 4, start(c(2016,1)))
+plot.ts(x, col = "red")
 
+T = decompose(x)
+plot(T, col ="blue")
 ```
 
+```{r}
+T$seasonal
+```
+
+```{r}
+ventas_desestacionalizadas = (T$x)/(T$seasonal)
+x3 = 1:16
+y3 = ventas_desestacionalizadas
+N3 = lm(y3~x3)
+N3
+plot(x3, y3, type = "l")
+abline(N3, col = "red")
+text(6, 7, " ventas = - 3.5443 + 0.4847 trimestre")
+```
+```{r}
+f = function(x) {- 3.5443 + 0.4847*x}
+
+predicciones <- predict(N3)
+
+# Cálculo del CME
+errores <- ventas_desestacionalizadas - predicciones
+CME <- mean(errores^2)
+print(paste("CME:",CME))
+
+# Cálculo del EPAM
+EPAM <- mean(abs(errores))
+print(paste("EPAM:",EPAM))
+
+a1 = T$seasonal[1]
+a2 =T$seasonal[2]
+a3 = T$seasonal[3]
+a4 = T$seasonal[4]
+
+f(17)*a1*1000
+f(18)*a2*1000
+f(19)*a3*1000
+f(20)*a4*1000
+```
+En este segundo ejercicio, se han aplicado diversas técnicas de análisis de series de tiempo para identificar patrones y comportamientos en los datos proporcionados. Los resultados obtenidos demuestran la importancia de entender la naturaleza de la serie temporal antes de aplicar modelos de pronóstico, ya que una correcta identificación de la estacionariedad es crucial para la precisión de las predicciones futuras. Además, se ha mostrado que el uso de técnicas de diferenciación y transformación de datos es fundamental para estabilizar la media y la varianza, asegurando así la aplicabilidad de los modelos seleccionados. Estos hallazgos subrayan la necesidad de una metodología rigurosa en el análisis de series de tiempo para obtener resultados fiables y precisos.
