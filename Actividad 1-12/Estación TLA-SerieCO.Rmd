@@ -1,0 +1,236 @@
+---
+title: "Contaminantes admosféricos desde la estación TLA(2000 a 2022)"
+author: "Blanca Ruiz"
+date: "2023-09-24"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Los datos
+```{r}
+M10 = read.csv("../data/TLA2010.csv")
+M21 = read.csv("../data/TLA2021.csv")
+M22 = read.csv("../data/TLA2022.csv")
+M00 = read.csv("../data/TLA2000.csv")
+```
+
+
+## MESES
+
+```{r}
+M00[M00 == -99] <- NA
+M10[M10 == -99] <- NA
+M21[M21 == -99] <- NA
+M22[M22 == -99] <- NA
+
+ene00 = M00[1:744, ]
+feb00 = M00[745:1440, ]
+mar00 = M00[1441:2209, ]
+abr00 = M00[2210:2904, ]
+may00 = M00[2905:3648, ]
+jun00 = M00[3649:4368, ]
+jul00 = M00[4369:5112, ]
+ago00 = M00[5113:5856, ]
+sep00 = M00[5857:6576, ]
+oct00 = M00[6577:7320, ]
+nov00 = M00[7321:8040, ]
+dic00 = M00[8041:8784, ]
+
+ene10 = M10[1:744, ]
+feb10 = M10[745:1416, ]
+mar10 = M10[1417:2160, ]
+abr10 = M10[2161:2880, ]
+may10 = M10[2881:3624, ]
+jun10 = M10[3625:4344, ]
+jul10 = M10[4345:5088, ]
+ago10 = M10[5088:5832, ]
+sep10 = M10[5833:6552, ]
+oct10 = M10[6553:7296, ]
+nov10 = M10[7297:8016, ]
+dic10 = M10[8017:8760, ]
+
+ene21 = M21[1:744, ]
+feb21 = M21[745:1416, ]
+mar21 = M21[1417:2160, ]
+abr21 = M21[2161:2880, ]
+may21 = M21[2881:3624, ]
+jun21 = M21[3625:4344, ]
+jul21 = M21[4345:5088, ]
+ago21 = M21[5088:5832, ]
+sep21 = M21[5833:6552, ]
+oct21 = M21[6553:7296, ]
+nov21 = M21[7297:8016, ]
+dic21 = M21[8017:8760, ]
+
+ene22 = M22[1:744, ]
+feb22 = M22[745:1416, ]
+mar22 = M22[1417:2160, ]
+abr22 = M22[2161:2880, ]
+may22 = M22[2881:3624, ]
+jun22 = M22[3625:4344, ]
+jul22 = M22[4345:5088, ]
+ago22 = M22[5088:5832, ]
+sep22 = M22[5833:6552, ]
+oct22 = M22[6553:7296, ]
+nov22 = M22[7297:8016, ]
+
+```
+
+## Promedios para el caso del monóxido de carbono (CO)
+
+```{r}
+ene00CO = mean(ene00$CO, na.rm = TRUE)
+feb00CO = mean(feb00$CO, na.rm = TRUE)
+mar00CO = mean(mar00$CO, na.rm = TRUE)
+abr00CO = mean(abr00$CO, na.rm = TRUE)
+may00CO = mean(may00$CO, na.rm = TRUE)
+jun00CO = mean(jun00$CO, na.rm = TRUE)
+jul00CO = mean(jul00$CO, na.rm = TRUE)
+ago00CO = mean(ago00$CO, na.rm = TRUE)
+sep00CO = mean(sep00$CO, na.rm = TRUE)
+oct00CO = mean(oct00$CO, na.rm = TRUE)
+nov00CO = mean(as.numeric(nov00$CO), na.rm = TRUE)
+dic00CO = mean(dic00$CO, na.rm = TRUE)
+prom_00CO = c(ene00CO,feb00CO, mar00CO, abr00CO, may00CO, jun00CO, jul00CO, ago00CO, sep00CO, oct00CO, nov00CO, dic00CO)
+
+ene10CO = mean(ene10$CO, na.rm = TRUE)
+feb10CO = mean(feb10$CO, na.rm = TRUE)
+mar10CO = mean(mar10$CO, na.rm = TRUE)
+abr10CO = mean(abr10$CO, na.rm = TRUE)
+may10CO = mean(may10$CO, na.rm = TRUE)
+jun10CO = mean(jun10$CO, na.rm = TRUE)
+jul10CO = mean(jul10$CO, na.rm = TRUE)
+ago10CO = mean(ago10$CO, na.rm = TRUE)
+sep10CO = mean(sep10$CO, na.rm = TRUE)
+oct10CO = mean(oct10$CO, na.rm = TRUE)
+nov10CO = mean(nov10$CO, na.rm = TRUE)
+dic10CO = mean(dic10$CO, na.rm = TRUE)
+prom_10CO = c(ene10CO,feb10CO, mar10CO, abr10CO,may10CO, jun10CO, jul10CO, ago10CO, sep10CO, oct10CO, nov10CO, dic10CO)
+
+ene21CO = mean(ene21$CO, na.rm = TRUE)
+feb21CO = mean(feb21$CO, na.rm = TRUE)
+mar21CO = mean(mar21$CO, na.rm = TRUE)
+abr21CO = mean(abr21$CO, na.rm = TRUE)
+may21CO = mean(may21$CO, na.rm = TRUE)
+jun21CO = mean(jun21$CO, na.rm = TRUE)
+jul21CO = mean(jul21$CO, na.rm = TRUE)
+ago21CO = mean(ago21$CO, na.rm = TRUE)
+sep21CO = mean(sep21$CO, na.rm = TRUE)
+oct21CO = mean(oct21$CO, na.rm = TRUE)
+nov21CO = mean(nov21$CO, na.rm = TRUE)
+dic21CO = mean(dic21$CO, na.rm = TRUE)
+prom_21CO = c(ene21CO,feb21CO, mar21CO, abr21CO,may21CO, jun21CO, jul21CO, ago21CO, sep21CO, oct21CO, nov21CO, dic21CO)
+
+ene22CO = mean(ene22$CO, na.rm = TRUE)
+feb22CO = mean(feb22$CO, na.rm = TRUE)
+mar22CO = mean(mar22$CO, na.rm = TRUE)
+abr22CO = mean(abr22$CO, na.rm = TRUE)
+may22CO = mean(may22$CO, na.rm = TRUE)
+jun22CO = mean(jun22$CO, na.rm = TRUE)
+jul22CO = mean(jul22$CO, na.rm = TRUE)
+ago22CO = mean(ago22$CO, na.rm = TRUE)
+sep22CO = mean(sep22$CO, na.rm = TRUE)
+oct22CO = mean(oct22$CO, na.rm = TRUE)
+nov22CO = mean(nov22$CO, na.rm = TRUE)
+prom_22CO = c(ene22CO,feb22CO, mar22CO, abr22CO, may22CO, jun22CO, jul22CO, ago22CO, sep22CO, oct22CO, nov22CO)
+
+mediasCO = c(prom_00CO, prom_10CO, prom_21CO, prom_22CO)
+mediasCO
+```
+
+```{r}
+plot(mediasCO, type = "l", pch = 19, col = "red", main ="Promedios mensuales CO desde 2000 a 2022", ylab = "Promedio", xlab = "mes",  lwd = 2)
+text(5, 0.4, "2000", adj = 0, cex = .7) # de izq a der 0 (0.5 es centro)
+text(17,  0.4, "2010",adj = 0, cex = 0.7)
+text(29,  0.4, "2021",adj = 0, cex = 0.7)
+text(41,  0.4, "2022",adj = 0, cex = 0.7)
+abline(v = 12, lty = 3)
+abline(v = 24, lty = 3 )
+abline(v = 36, lty = 3)
+abline(v = 48, lty = 3)
+```
+
+## Guardando los promedios en archivo leíble 
+#```{r}
+#write.csv(mediasCO, "mediasCO2000_2022.csv", row.names = #FALSE)
+#```
+
+## Análisis de tendencia y estacionalidad
+
+```{r}
+mes = 1:47
+CO = ts(mediasCO[1:47], frequency = 12, start(c(2000, 1)))
+#T =decompose(x, type = "m")
+plot.ts(CO, col = "blue")
+```
+
+
+```{r}
+T =decompose(CO, type = "m")
+plot(T, col = "blue")
+```
+
+## Hallando el modelo de regresión lineal de la tendencia
+Modelo de la recta 
+
+```{r}
+# desestacionalizando las ventas
+y1 = T$x/T$seasonal
+plot(mes, y1, type = "o", main = "Tendencia de la serie", xlab = "mes", ylab = "CO", lwd = 2, pch = 19)
+regresion = lm(y1 ~ mes)
+regresion
+summary(regresion)
+abline(regresion, col ="red", lwd =2)
+text(30, 1.5, "CO = 2.22 - 0.049 t")
+```
+
+Modelo de la parabola
+
+```{r}
+# desestacionalizando las ventas
+y1 = T$x/T$seasonal
+plot(mes, y1, type = "o", main = "Tendencia de la serie", xlab = "trimestre", ylab = "ventas", lwd = 2, pch = 19)
+z1 = mes
+z2 =  mes^2
+regresion2 = lm(y1 ~ z1 + z2)
+regresion2
+x2 = 1:47
+y2 = 3.028454 -0.146851*mes + 0.002037*mes^2 
+lines(x2, y2, col ="red", lwd =2)
+text(8, 5, "parábola")
+```
+
+
+## CME proyección de tendencias
+
+```{r}
+e = NA
+g = NA
+f = function(mes) 3.028454 -0.146851*mes + 0.002037*mes^2 
+for(i in 1:47){
+g[i] = f(i)*T$seasonal[i]
+e[i] = CO[i]- g[i]
+}
+CME_tendencia = mean(e^2, na.rm = TRUE)
+cat("El CME del Método de proyección de tendencia es: ", CME_tendencia, "\n")
+
+```
+
+## Gráfica de tendencia con estacionalidad incorporada
+
+```{r}
+xg = 1:47
+plot(xg, CO, col ="red", type = "o", lwd = 2, pch = 19)
+lines(xg, g, col = "blue", type = "o", lwd =2, lty = 5)
+legend("topleft", legend = c("CO", "pronóstico"), fill = c("red", "blue"))
+```
+
+
+
+
+
+
+
