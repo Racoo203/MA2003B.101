@@ -10,6 +10,10 @@ knitr::opts_chunk$set(echo = TRUE)
 library(ISLR)
 library(stats)
 library(ggplot2)
+library(vcd)
+library(car)
+library(lmtest)
+library(dplyr)
 ```
 
 # Preparación de Datos
@@ -28,9 +32,22 @@ Weekly_test = Weekly[test_index,]
 log_model = glm(Direction ~ Lag2, Weekly_train, family='binomial')
 
 summary(log_model)
+summary(Weekly_train$Lag2)
 ```
 
-Observamos que el modelo indica coeficientes 0.2033 para $\beta_0$ y 0.0581 para $\beta_1$. Adicionalmente, sus respectivos valores p son de 0.001 y 0.042, ambos siendo estadísticamente significativos. Por lo tanto, se puede inferir que los coeficientes son diferentes de 0 y son significativos al modelo. En este contexto, el $\beta_1$ indica que por cada unidad de cambio de Lag2, la función logit tendrá un cambio de 0.0581. Por lo tanto: Por por cada unidad que se incrementa la variableLag2, se espera que el logaritmo de odds de la variable Direction se incremente en promedio 0.0581 unidades. Es decir, por cada unidad que se incrementa la variable Lag2, los odds de que Direction sea "Up" se incrementan en promedio $\log$
+```{r}
+beta_1 = log_model$coefficients["Lag2"]
+intercept = log_model$coefficients["(Intercept)"]
+Lag2_value = 0.0061
+
+odds_increase = exp(beta_1)
+prob = 1/(1+exp(-(intercept + beta_1 * Lag2_value)))
+
+cat("La probabilidad de que el mercado suba aumenta", odds_increase, "veces por cada unidad de Lag2\n")
+cat("La probabilidad de que el mercado suba cuando Lag2 =", Lag2_value, "es de", prob, "\n")
+```
+
+Observamos que el modelo indica coeficientes $0.2033$ para $\beta_0$ y $0.0581$ para $\beta_1$. Adicionalmente, sus respectivos valores $p$ son de $0.001$ y $0.042$, ambos siendo estadísticamente significativos. Por lo tanto, se puede inferir que los coeficientes son diferentes de $0$ y son significativos al modelo. En este contexto, el $\beta_1$ indica que por cada unidad de cambio de Lag2, cuanto cambió habrá en la función logit. Por lo tanto: Por por cada unidad que se incrementa la variable Lag2, se espera que el logaritmo de odds de la variable Direction se incremente en promedio $0.0581$ unidades. Es decir, por cada unidad que se incrementa la variable Lag2, los odds de que Direction sea "Up" se incrementan en promedio $e^{\beta_1}\approx1.05982$ veces. Sin tener el dato específico del ROI por quincena del S&P 500 el día de hoy, se toma el estimado de $1.22 \% / 2\approx0.61\%$ (siendo $1.22\%$ el ROI del mes de Julio 2024). Esto corresponde a una probabilidad de una dirección de Up de $55.1\%$.
 
 ```{r}
 Weekly_test$preds = predict(log_model, newdata = data.frame(Lag2 = Weekly_test$Lag2), type = "response")
@@ -42,6 +59,36 @@ ggplot(Weekly_test, aes(x = Lag2, y = preds)) +
        y = "Probabilidad de Direction") +
   theme_minimal()
 ```
+
+```{r}
+Lag2_range <- seq(min(Weekly_train$Lag2)*3, max(Weekly_train$Lag2)*3, length.out = 100)
+
+prob_preds <- predict(log_model, newdata = data.frame(Lag2 = Lag2_range), type = "response")
+
+df_curve <- data.frame(Lag2 = Lag2_range, Probabilidad = prob_preds)
+
+ggplot() +
+  geom_point(data = Weekly_train, aes(x = Lag2, y = as.numeric(Direction) - 1), alpha = 0.5, color = "blue") +
+  geom_line(data = df_curve, aes(x = Lag2, y = Probabilidad), color = "red", size = 1) +
+  labs(title = "Curva de Regresión Logística",
+       x = "Lag2",
+       y = "Probabilidad de Direction = Up") +
+  theme_minimal()
+```
+
+# Evaluación del Modelo
+
+## ANOVA para Diferencia entre Modelo Nulo y Modelo Residual
+
+```{r}
+null_model = glm(Direction ~ 1, data = Weekly_train, family = "binomial")
+anova_resultado = anova(null_model, log_model, test = "Chi")
+print(anova_resultado)
+```
+
+Al haber obtenido un valor de $p$ de $0.041$, se infiere que el modelo con Lag2 como variable predictora es estadísticamente significativo contra un modelo sin predictores.
+
+## Matriz de Contingencia
 
 ```{r}
 Weekly_test$preds_class = ifelse(Weekly_test$preds > 0.5, 1, 0)
@@ -58,9 +105,70 @@ cat("Sensibilidad:", sensibilidad, "\n")
 cat("Especificidad:", especificidad, "\n")
 ```
 
+## Diagrama de Mosaico
+
 ```{r}
-logit_preds = log(Weekly_test$preds / (1 - Weekly_test$preds))
+mosaic(tabla_contingencia)
+```
+
+# Validación de Supuestos
+
+## Linealidad
+
+```{r}
+logit_preds <- log(Weekly_test$preds / (1 - Weekly_test$preds))
 plot(logit_preds ~ Weekly_test$Lag2, main = "Logit vs Lag2",
      xlab = "Lag2", ylab = "Logit")
 abline(lm(logit_preds ~ Weekly_test$Lag2), col = "blue")
 ```
+
+Se observa que el modelo se ajusta adecuadamente a los valores logit de la variable categórica representada numericamente, por lo cual se infiere que una relación lineal entre Lag2 y la función logit aplicada a Direction.
+
+## Ausencia de Multicolinealidad
+
+```{r echo=TRUE, message=TRUE}
+vif_result = tryCatch({
+  vif(log_model)
+}, error = function(e) {
+  # Captura del mensaje de error
+  paste("Error:", e$message)
+})
+
+# Imprimir el resultado (si hubo un error, se mostrará el mensaje)
+print(vif_result)
+```
+
+Este error ocurre debido a que no se puede tener multicolinealidad para un modelo de una sola variable predictora. Por lo tanto, se cumple el supuesto de multicolinealidad.
+
+## Independencia de los Residuos.
+
+```{r}
+residuals_standardized = rstandard(log_model)
+fitted_values = fitted(log_model)
+
+residuals_df = data.frame(Fitted = fitted_values, Residuals = residuals_standardized)
+
+# Crear el gráfico
+ggplot(residuals_df, aes(x = Fitted, y = Residuals)) +
+  geom_point(alpha = 0.5) +
+  geom_hline(yintercept = 0, color = "red", linetype = "dashed") +
+  labs(title = "Residuos Estandarizados vs Valores Ajustados",
+       x = "Valores Ajustados",
+       y = "Residuos Estandarizados") +
+  theme_minimal()
+
+
+dwtest(log_model)
+```
+
+Tanto el gráfico como la prueba de Durbin-Watson afirman que no se tiene evidencia estadística para rechazar la hipótesis nula, por lo que los residuos son independientes.
+
+## Tamaño de Muestra
+
+```{r}
+Weekly_train %>%
+  group_by(Direction) %>%
+  summarise(count = n())
+```
+
+Se tienen suficientes muestras para ambos casos para poder hacer un análisis de regresión logística.
