@@ -1,0 +1,177 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[
+]{article}
+\usepackage{amsmath,amssymb}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math} % this also loads fontspec
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+\usepackage{lmodern}
+\ifPDFTeX\else
+  % xetex/luatex font selection
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\usepackage[margin=1in]{geometry}
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\usepackage{framed}
+\definecolor{shadecolor}{RGB}{248,248,248}
+\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{0.94,0.16,0.16}{#1}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\BuiltInTok}[1]{#1}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{0.64,0.00,0.00}{\textbf{#1}}}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\ImportTok}[1]{#1}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\usepackage{graphicx}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+% Set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\ifLuaTeX
+  \usepackage{selnolig}  % disable illegal ligatures
+\fi
+\usepackage{bookmark}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same}
+\hypersetup{
+  pdftitle={Actividad 1.12 Series de tiempo no estacionarias},
+  pdfauthor={Raúl Correa Ocañas},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+
+\title{Actividad 1.12 Series de tiempo no estacionarias}
+\author{Raúl Correa Ocañas}
+\date{2024-08-31}
+
+\begin{document}
+\maketitle
+
+\section{Resumen Breve del Método
+Predictivo}\label{resumen-breve-del-muxe9todo-predictivo}
+
+El documento de Markdown se centra en el análisis de los niveles de
+monóxido de carbono (CO) registrados en la estación TLA desde el año
+2000 hasta 2022. Primero se cargan los CSVs anuales de los años 2000,
+2010, 2021 y 2022. En la limpieza de los datos, se sustituyen los
+valores faltantes (\texttt{-99)} con \texttt{NA}, para facilitar el
+manejo de la información. Además, se realiza una segmentación de los
+datos por mes a nivel día y hora. Una vez hecha esta agrupación, se
+realiza el cálculo de los promedios mensuales de las concentraciones de
+CO. Utilizando estas medias, se generan gráficos que visualizan las
+tendencias a lo largo del tiempo, permitiendo observar variaciones
+estacionales.
+
+El análisis también incluye la creación de una serie de tiempo a partir
+de los promedios mensuales de CO. Esta serie temporal se descompone en
+sus componentes de tendencia, estacionalidad y residuos, utilizando la
+función \texttt{decompose}. Se trabaja sobre una versión
+desestacionalizada de la serie de tiempo. Sobre esta, primero se prueba
+un modelo de regresión lineal para modelar la serie de tiempo. Bien si
+sus coeficientes son significativos al llamar la función
+\texttt{summary}, en verdad no representa del todo bien los datos. El
+modelo cuadrático representa mejor tanto con su métrica de \(R^2\) como
+con la significancia de sus coeficientes.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Cargar datos y crear la serie temporal}
+\NormalTok{CO }\OtherTok{\textless{}{-}} \FunctionTok{ts}\NormalTok{(}\FunctionTok{read.csv}\NormalTok{(}\StringTok{\textquotesingle{}../data/mediasCO2000\_2022.csv\textquotesingle{}}\NormalTok{)[}\DecValTok{1}\SpecialCharTok{:}\DecValTok{47}\NormalTok{,], }\AttributeTok{frequency =} \DecValTok{12}\NormalTok{, }\AttributeTok{start =} \FunctionTok{c}\NormalTok{(}\DecValTok{2000}\NormalTok{, }\DecValTok{1}\NormalTok{))}
+
+\CommentTok{\# Descomposición de la serie}
+\NormalTok{T }\OtherTok{\textless{}{-}} \FunctionTok{decompose}\NormalTok{(CO, }\AttributeTok{type =} \StringTok{"multiplicative"}\NormalTok{)}
+
+\CommentTok{\# Modelos de regresión lineal y cuadrático}
+\NormalTok{f1 }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(mes) }\FloatTok{2.22998} \SpecialCharTok{{-}} \FloatTok{0.04908} \SpecialCharTok{*}\NormalTok{ mes}
+\NormalTok{f2 }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(mes) }\FloatTok{3.028454} \SpecialCharTok{{-}} \FloatTok{0.146851} \SpecialCharTok{*}\NormalTok{ mes }\SpecialCharTok{+} \FloatTok{0.002037} \SpecialCharTok{*}\NormalTok{ mes}\SpecialCharTok{\^{}}\DecValTok{2}
+
+\CommentTok{\# Predicciones ajustadas y errores}
+\NormalTok{g1 }\OtherTok{\textless{}{-}} \FunctionTok{f1}\NormalTok{(}\DecValTok{1}\SpecialCharTok{:}\DecValTok{47}\NormalTok{) }\SpecialCharTok{*}\NormalTok{ T}\SpecialCharTok{$}\NormalTok{seasonal[}\DecValTok{1}\SpecialCharTok{:}\DecValTok{47}\NormalTok{]}
+\NormalTok{g2 }\OtherTok{\textless{}{-}} \FunctionTok{f2}\NormalTok{(}\DecValTok{1}\SpecialCharTok{:}\DecValTok{47}\NormalTok{) }\SpecialCharTok{*}\NormalTok{ T}\SpecialCharTok{$}\NormalTok{seasonal[}\DecValTok{1}\SpecialCharTok{:}\DecValTok{47}\NormalTok{]}
+\NormalTok{e1 }\OtherTok{\textless{}{-}}\NormalTok{ CO }\SpecialCharTok{{-}}\NormalTok{ g1}
+\NormalTok{e2 }\OtherTok{\textless{}{-}}\NormalTok{ CO }\SpecialCharTok{{-}}\NormalTok{ g2}
+
+\CommentTok{\# Calcular CME y MAPE para ambos modelos y mostrar resultados}
+\FunctionTok{cat}\NormalTok{(}
+  \StringTok{"El CME del Método de proyección de tendencia Lineal es:"}\NormalTok{, }\FunctionTok{round}\NormalTok{(}\FunctionTok{mean}\NormalTok{(e1}\SpecialCharTok{\^{}}\DecValTok{2}\NormalTok{, }\AttributeTok{na.rm =} \ConstantTok{TRUE}\NormalTok{), }\DecValTok{3}\NormalTok{), }\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{,}
+  \StringTok{"El MAPE del Método de proyección de tendencia Lineal es:"}\NormalTok{, }\FunctionTok{round}\NormalTok{(}\FunctionTok{mean}\NormalTok{(}\FunctionTok{abs}\NormalTok{(e1 }\SpecialCharTok{/}\NormalTok{ g1), }\AttributeTok{na.rm =} \ConstantTok{TRUE}\NormalTok{) }\SpecialCharTok{*} \DecValTok{100}\NormalTok{, }\DecValTok{3}\NormalTok{), }\StringTok{"\%}\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{,}
+  \StringTok{"El CME del Método de proyección de tendencia Cuadrática es:"}\NormalTok{, }\FunctionTok{round}\NormalTok{(}\FunctionTok{mean}\NormalTok{(e2}\SpecialCharTok{\^{}}\DecValTok{2}\NormalTok{, }\AttributeTok{na.rm =} \ConstantTok{TRUE}\NormalTok{), }\DecValTok{3}\NormalTok{), }\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{,}
+  \StringTok{"El MAPE del Método de proyección de tendencia Cuadrática es:"}\NormalTok{, }\FunctionTok{round}\NormalTok{(}\FunctionTok{mean}\NormalTok{(}\FunctionTok{abs}\NormalTok{(e2 }\SpecialCharTok{/}\NormalTok{ g2), }\AttributeTok{na.rm =} \ConstantTok{TRUE}\NormalTok{) }\SpecialCharTok{*} \DecValTok{100}\NormalTok{, }\DecValTok{3}\NormalTok{), }\StringTok{"\%}\SpecialCharTok{\textbackslash{}n}\StringTok{"}
+\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## El CME del Método de proyección de tendencia Lineal es: 0.12 
+##  El MAPE del Método de proyección de tendencia Lineal es: 150.521 %
+##  El CME del Método de proyección de tendencia Cuadrática es: 0.023 
+##  El MAPE del Método de proyección de tendencia Cuadrática es: 12.539 %
+\end{verbatim}
+
+\end{document}

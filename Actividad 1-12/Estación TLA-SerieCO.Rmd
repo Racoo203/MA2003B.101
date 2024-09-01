@@ -154,9 +154,9 @@ abline(v = 48, lty = 3)
 ```
 
 ## Guardando los promedios en archivo leíble 
-#```{r}
-#write.csv(mediasCO, "mediasCO2000_2022.csv", row.names = #FALSE)
-#```
+```{r}
+write.csv(mediasCO, "../data/mediasCO2000_2022.csv", row.names = FALSE)
+```
 
 ## Análisis de tendencia y estacionalidad
 
@@ -197,6 +197,7 @@ z1 = mes
 z2 =  mes^2
 regresion2 = lm(y1 ~ z1 + z2)
 regresion2
+summary(regresion2)
 x2 = 1:47
 y2 = 3.028454 -0.146851*mes + 0.002037*mes^2 
 lines(x2, y2, col ="red", lwd =2)

@@ -2,11 +2,63 @@
 title: "Actividad 1.12 Series de tiempo no estacionarias"
 author: "Raúl Correa Ocañas"
 date: "`r Sys.Date()`"
-output: html_document
+output:
+  html_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+# Resumen Breve del Método Predictivo
 
+El documento de Markdown se centra en el análisis de los niveles de monóxido de carbono (CO) registrados en la estación TLA desde el año 2000 hasta 2022. Primero se cargan los CSVs anuales de los años 2000, 2010, 2021 y 2022. En la limpieza de los datos, se sustituyen los valores faltantes (`-99)` con `NA`, para facilitar el manejo de la información. Además, se realiza una segmentación de los datos por mes a nivel día y hora. Una vez hecha esta agrupación, se realiza el cálculo de los promedios mensuales de las concentraciones de CO. Utilizando estas medias, se generan gráficos que visualizan las tendencias a lo largo del tiempo, permitiendo observar variaciones estacionales.
+
+El análisis también incluye la creación de una serie de tiempo a partir de los promedios mensuales de CO. Esta serie temporal se descompone en sus componentes de tendencia, estacionalidad y residuos, utilizando la función `decompose`. Se trabaja sobre una versión desestacionalizada de la serie de tiempo. Sobre esta, primero se prueba un modelo de regresión lineal para modelar la serie de tiempo. Bien si sus coeficientes son significativos al llamar la función `summary`, en verdad no representa del todo bien los datos. El modelo cuadrático representa mejor tanto con su métrica de $R^2$ como con la significancia de sus coeficientes.
+
+# Métricas y Resultados de Modelos
+
+## Predicción con Modelo Lineal
+
+$$
+y = \begin{bmatrix} \beta_0 & \beta_1 \end{bmatrix} \begin{bmatrix} 1 & 1 & \cdots & 1 & 1\\  t_1 & t_2 & \cdots & t_{n-1} & t_{n}\end{bmatrix} \begin{bmatrix} S_1 & 0 & \cdots & 0 & 0 \\ 0 & S_2 & \cdots & 0 & 0 \\ \vdots & \vdots & \ddots & \vdots & \vdots \\ 0 & 0 & \cdots & S_{n-1} & 0 \\ 0 & 0 & \cdots & 0 & S_{n} \end{bmatrix} + \epsilon
+$$
+
+## Predicción con Modelo Cuadrático
+
+$$
+y = \begin{bmatrix} \beta_0 & \beta_1 & \beta_2 \end{bmatrix} \begin{bmatrix} 1 & 1 & \cdots & 1 & 1 \\  t_1 & t_2 & \cdots & t_{n-1} & t_{n} \\  t_1^2 & t_2^2 & \cdots & t_{n-1}^2 & t_{n}^2 \end{bmatrix} \begin{bmatrix} S_1 & 0 & \cdots & 0 & 0 \\ 0 & S_2 & \cdots & 0 & 0 \\ \vdots & \vdots & \ddots & \vdots & \vdots \\ 0 & 0 & \cdots & S_{n-1} & 0 \\ 0 & 0 & \cdots & 0 & S_{n} \end{bmatrix} + \epsilon
+$$
+
+Donde $S_{n \times n}$ es la matriz de los factores de estacionalidad, y $\beta$ es el vector de coeficientes tal que $\min z = m-\beta X$. En esta notación, $m$ denota las medias mensuales de CO y $X$ representa las variables predictoras para $m$.
+
+```{r MAPE Y CME, echo=TRUE, message=TRUE, warning=FALSE, paged.print=FALSE}
+# Cargar datos y crear la serie temporal
+CO <- ts(read.csv('../data/mediasCO2000_2022.csv')[1:47,], frequency = 12, start = c(2000, 1))
+
+# Descomposición de la serie
+T <- decompose(CO, type = "multiplicative")
+
+# Modelos de regresión lineal y cuadrático
+f1 <- function(mes) 2.22998 - 0.04908 * mes
+f2 <- function(mes) 3.028454 - 0.146851 * mes + 0.002037 * mes^2
+
+# Predicciones ajustadas y errores
+g1 <- f1(1:47) * T$seasonal[1:47]
+g2 <- f2(1:47) * T$seasonal[1:47]
+e1 <- CO - g1
+e2 <- CO - g2
+
+# Calcular CME y MAPE para ambos modelos y mostrar resultados
+cat(
+  "El CME del Método de proyección de tendencia Lineal es:", round(mean(e1^2, na.rm = TRUE), 3), "\n",
+  "El MAPE del Método de proyección de tendencia Lineal es:", round(mean(abs(e1 / g1), na.rm = TRUE) * 100, 3), "%\n",
+  "El CME del Método de proyección de tendencia Cuadrática es:", round(mean(e2^2, na.rm = TRUE), 3), "\n",
+  "El MAPE del Método de proyección de tendencia Cuadrática es:", round(mean(abs(e2 / g2), na.rm = TRUE) * 100, 3), "%\n"
+)
+```
+
+# Conclusión
+
+El análisis de los niveles de monóxido de carbono en la estación TLA desde el año 2000 hasta 2022 revela que el modelo cuadrático ofrece un mejor ajuste a los datos en comparación con el modelo lineal. La descomposición de la serie temporal permitió aislar la estacionalidad y comparar los modelos de regresión lineal y cuadrático. Los resultados indican que el modelo cuadrático tiene un CME de 0.023 y un MAPE de 12.539%, mientras que el modelo lineal presenta un CME de 0.12 y un MAPE significativamente más alto de 150.521%. Estos resultados sugieren que la incorporación de un término cuadrático mejora significativamente la precisión de las predicciones al capturar mejor las variaciones en los niveles de CO.

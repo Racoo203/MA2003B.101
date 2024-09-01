@@ -1,0 +1,66 @@
+---
+title: "Actividad 2.7 Regresión Logística"
+author: "Raúl Correa Ocañas"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ISLR)
+library(stats)
+library(ggplot2)
+```
+
+# Preparación de Datos
+
+```{r}
+train_index = which(Weekly$Year <= 2008)
+test_index = which(Weekly$Year > 2008)
+
+Weekly_train = Weekly[train_index,]
+Weekly_test = Weekly[test_index,]
+```
+
+# Modelo de Regresión Logística
+
+```{r}
+log_model = glm(Direction ~ Lag2, Weekly_train, family='binomial')
+
+summary(log_model)
+```
+
+Observamos que el modelo indica coeficientes 0.2033 para $\beta_0$ y 0.0581 para $\beta_1$. Adicionalmente, sus respectivos valores p son de 0.001 y 0.042, ambos siendo estadísticamente significativos. Por lo tanto, se puede inferir que los coeficientes son diferentes de 0 y son significativos al modelo. En este contexto, el $\beta_1$ indica que por cada unidad de cambio de Lag2, la función logit tendrá un cambio de 0.0581. Por lo tanto: Por por cada unidad que se incrementa la variableLag2, se espera que el logaritmo de odds de la variable Direction se incremente en promedio 0.0581 unidades. Es decir, por cada unidad que se incrementa la variable Lag2, los odds de que Direction sea "Up" se incrementan en promedio $\log$
+
+```{r}
+Weekly_test$preds = predict(log_model, newdata = data.frame(Lag2 = Weekly_test$Lag2), type = "response")
+
+ggplot(Weekly_test, aes(x = Lag2, y = preds)) +
+  geom_point(aes(color = as.factor(Direction)), alpha = 0.5) +
+  labs(title = "Probabilidad Predicha de Direction Up vs Edad",
+       x = "Lag2",
+       y = "Probabilidad de Direction") +
+  theme_minimal()
+```
+
+```{r}
+Weekly_test$preds_class = ifelse(Weekly_test$preds > 0.5, 1, 0)
+
+tabla_contingencia = table(Predicciones = Weekly_test$preds_class, Real = Weekly_test$Direction)
+print(tabla_contingencia)
+
+tasa_error = 1 - sum(diag(tabla_contingencia)) / sum(tabla_contingencia)
+sensibilidad = tabla_contingencia[2, 2] / sum(tabla_contingencia[2, ])
+especificidad = tabla_contingencia[1, 1] / sum(tabla_contingencia[1, ])
+
+cat("Tasa de Error:", tasa_error, "\n")
+cat("Sensibilidad:", sensibilidad, "\n")
+cat("Especificidad:", especificidad, "\n")
+```
+
+```{r}
+logit_preds = log(Weekly_test$preds / (1 - Weekly_test$preds))
+plot(logit_preds ~ Weekly_test$Lag2, main = "Logit vs Lag2",
+     xlab = "Lag2", ylab = "Logit")
+abline(lm(logit_preds ~ Weekly_test$Lag2), col = "blue")
+```
