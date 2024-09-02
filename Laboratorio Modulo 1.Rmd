@@ -7,6 +7,10 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(matlib)
+library(mnormt)
+library(MVN)
+library(ggplot2)
 ```
 
 # Ejercicio 1.
@@ -24,7 +28,6 @@ Donde $Q$ es la matriz cuyas columnas son los eigenvectores de $M$, y $\Lambda$ 
 Una matriz $M$ es diagonalizable (es decir, tiene una descomposición espectral) si tiene un conjunto completo de eigenvectores linealmente independientes. En particular, si $M$ es una matriz simétrica, siempre es diagonalizable.
 
 ```{r Ejercicio 1, warning=FALSE}
-library(matlib)
 
 M = matrix(c(4.4, 0.8, 0.8, 5.6), nrow = 2, byrow = TRUE)
 eigen_M = eigen(M, symmetric = FALSE)
@@ -37,3 +40,57 @@ inv(Q)
 ```
 
 **Importante: La función `eigen()` muestra los eigenvectores unitarios.**
+
+# Ejercicio 2.
+
+Si $X$ se distribuye normalmente con una media $\mu = \begin{bmatrix} 2.5 \\ 4 \end{bmatrix}$ y una covarianza $\Sigma = \begin{bmatrix} 1.2 & 0 \\ 0 & 2.3 \end{bmatrix}$, calcular $P(X < x)$ donde $x = \begin{bmatrix} 2 \\ 3 \end{bmatrix}$.
+
+```{r}
+bound = c(2,3)
+mu = c(2.5, 4)
+sigma = matrix(c(1.2, 0, 0, 2.3), nrow = 2, byrow = TRUE)
+p = pmnorm(x = bound, mean = mu, varcov = sigma)
+cat("La probabilidad de X dado que sea acotada por x es:", round(p, 4))
+```
+
+# Ejercicio 3.
+
+Con los datos [datosX1X2X3.csv](https://experiencia21.tec.mx/courses/520587/files/190072137?wrap=1 "datosX1X2X3.csv") del vector de variables aleatorio $X = (X_1, X_2, X_3)$ calcular las distancias de Mahalanobis y hallar las proporciones de datos por debajo de los percentiles de Chi-cuadrada corespondientes a 10, 20, 30, 40, 50, 60, 70, 80 y 90. Hacer una gráfica de Chi-2($1-\alpha$, gl = 3) vs la proporción hallada. ¿Se podría decir que X se distribuye normalmente?
+
+Recordemos que la distancia de Mahalanobis está definida como:
+
+$$
+d_M(x,Q)=\sqrt{(x-\mu)^T \Sigma^{-1}(x-\mu)} 
+$$
+
+$Q$ siendo una distribución normal multivariada en $\mathbb{R}^N$ con media $\mu = (\mu_1, \mu_2, \cdots,\mu_{N-1}, \mu_{N})$ y matriz de covarianzas $\Sigma$. En el caso de datos que siguen una distribución normal multivariada $X \sim \mathcal{N}(\mu, \Sigma)$, la distancia de Mahalanobis de una observación tiene una relación directa con la distribución Chi-cuadrada. Para una observación $x$ un conjunto de datos con $p$ variables, la distancia de Mahalanobis sigue una distribución Chi-cuadrada con $p$ grados de libertad.
+
+```{r}
+dataset = read.csv("data/datosX1X2X3.csv")
+mu = colMeans(dataset)
+sigma = cov(dataset)
+stat_dist = mahalanobis(dataset, mu, sigma)
+
+percentiles = qchisq(seq(0.1, 0.9, by = 0.1), df = 3)
+
+proportions = sapply(percentiles, function(p) mean(stat_dist < p))
+
+cbind(percentiles, proportions)
+```
+
+```{r}
+qqplot_data <- data.frame(
+  Theoretical = qchisq(ppoints(length(stat_dist)), df = 3),
+  Sample = sort(stat_dist)
+)
+
+ggplot(qqplot_data, aes(sample = Sample, theoretical = Theoretical)) +
+  geom_point(aes(x = Theoretical, y = Sample)) +
+  geom_abline(slope = 1, intercept = 0, color = "red", linetype = "dashed") +
+  labs(title = "QQ Plot of Mahalanobis Distances vs Chi-square Distribution",
+       x = "Theoretical Quantiles (Chi-square)",
+       y = "Sample Quantiles (Mahalanobis Distance)") +
+  theme_minimal()
+
+mvn(dataset)
+```
