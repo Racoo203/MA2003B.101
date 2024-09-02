@@ -1,0 +1,39 @@
+---
+title: "Laboratorio Modulo 1."
+author: "Raúl Correa Ocañas"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Ejercicio 1.
+
+*Encontrar la decomposición espectral de la siguiente matriz:* $\begin{bmatrix} 4.4 & 0.8 \\ 0.8 & 5.6\end{bmatrix}$*.*
+
+Recordemos que una matriz $M$ tiene una decomposición espectral de la forma $M = Q\Lambda Q^{-1}$, tal que
+
+$$
+Q = \begin{bmatrix} e_{1,1} & \cdots & e_{n,1} \\ \vdots & \ddots & \vdots \\ e_{1,n} & \cdots & e_{n,n}\end{bmatrix}, \Lambda=\begin{bmatrix} \lambda_1 & \cdots & 0 \\ \vdots & \ddots & \vdots \\ 0 & \cdots & \lambda_n\end{bmatrix}
+$$
+
+Donde $Q$ es la matriz cuyas columnas son los eigenvectores de $M$, y $\Lambda$ es la matriz diagonal que contiene los eigenvalores correspondientes de $M$.
+
+Una matriz $M$ es diagonalizable (es decir, tiene una descomposición espectral) si tiene un conjunto completo de eigenvectores linealmente independientes. En particular, si $M$ es una matriz simétrica, siempre es diagonalizable.
+
+```{r Ejercicio 1, warning=FALSE}
+library(matlib)
+
+M = matrix(c(4.4, 0.8, 0.8, 5.6), nrow = 2, byrow = TRUE)
+eigen_M = eigen(M, symmetric = FALSE)
+Q = eigen_M$vectors # Matriz de eigenvectores.
+L = diag(eigen_M$values) # Matriz diagonal de eigenvalores.
+
+Q %*% L %*% inv(Q)
+Q
+inv(Q)
+```
+
+**Importante: La función `eigen()` muestra los eigenvectores unitarios.**
