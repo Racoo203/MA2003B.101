@@ -24,6 +24,8 @@ test_index = which(Weekly$Year > 2008)
 
 Weekly_train = Weekly[train_index,]
 Weekly_test = Weekly[test_index,]
+
+Weekly_test
 ```
 
 # Modelo de Regresión Logística

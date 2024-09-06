@@ -23,7 +23,6 @@ df = read.csv(data_path)
 df
 ```
 
-
 # 1. Análisis Exploratorio de Datos
 
 ```{r}
@@ -48,7 +47,6 @@ cor_melted <- melt(cor_matrix)
 cor_melted_filtered <- cor_melted[upper.tri(cor_matrix, diag = FALSE), ]
 cor_melted_filtered[order(cor_melted_filtered$value), ]
 ```
-
 
 # 2. Método de Mínimos Cuadrados
 
@@ -107,8 +105,8 @@ Shapiro-Wilk normality test
 ```{r}
 shapiro.test(ols$residuals)
 ```
-Con un valor de p de 0.8725 para la prueba de Shapiro-Wilk, no se tiene evidencia para rechazar la hipotesis nula, por lo que se puede inferir que la distribución de los errores es normal.
 
+Con un valor de p de 0.8725 para la prueba de Shapiro-Wilk, no se tiene evidencia para rechazar la hipotesis nula, por lo que se puede inferir que la distribución de los errores es normal.
 
 ## 5.2 Verificación de media cero
 

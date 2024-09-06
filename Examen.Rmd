@@ -1,0 +1,732 @@
+---
+title: "Examen Argumentativo"
+author: "Raúl Correa Ocañas"
+date: "`r Sys.Date()`"
+output: html_document
+editor_options: 
+  markdown: 
+    wrap: sentence
+---
+
+# Librerias
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(lmtest) 
+
+library(ISLR)
+library(stats)
+library(ggplot2)
+library(vcd)
+library(car)
+library(lmtest)
+library(dplyr)
+
+library(matlib)
+library(mnormt)
+library(MVN)
+library(ggplot2)
+library(psych)
+library(performance)
+library(GPArotation)
+library(datasets)
+
+set.seed(42)
+```
+
+# Pregunta 1.
+
+```{r}
+dataset_1 = read.csv("data/datos_rm-2.csv")
+head(dataset_1, 5)
+```
+
+## Inciso 1.
+
+Realiza los gráficos de dispersión entre las variables y la matriz de correlaciones, describe tus observaciones.
+Considera la variable V4 como variable dependiente.
+
+```{r}
+numeric_dataset_1 = dataset_1[,-9]
+pairs(numeric_dataset_1)
+cor(numeric_dataset_1)
+```
+
+Considerando la variable 4 como una variable dependiente, se puede considerar que tiene una relación clara con la variable 1, 5, 6, de tipo regresión.
+Por otra parte, se pueden observar claras distinciones divisiones en las variables 2 y 8.
+Finalmente, las variables 3 y 7 aparentan una ausencia de relación entre los datos.
+
+## Inciso 2.
+
+Utiliza el criterio de Akaike y la selección por pasos en dirección mixta de variables predictoras.
+Escriba la ecuación del modelo de regresión resultante.
+
+```{r}
+ols = lm(V4 ~ ., data = numeric_dataset_1)
+both_ols_aic = step(ols, direction = "both", trace = 1)
+```
+
+Según el criterio de Akaike utilizando un paso en dirección de "ambos", el mejor modelo para predicir la variable $V_4$ es:
+
+```{r}
+both_ols_aic$coefficients
+```
+
+La ecuación del mejor modelo que representa los datos es la siguiente:
+
+$$
+\hat{V_4} = 1.949V_2 + 0.029 V_5 - 5.124V_6 - 0.939V_7 + 4.282V_8 + 152.704
+$$
+
+## Inciso 3.
+
+Analiza para el modelo obtenido: (Selecciona 2 criterios)
+
+```{r}
+best_ols = lm(V4 ~ V2 + V5 + V6 + V7 + V8, data = numeric_dataset_1)
+summary(best_ols)
+```
+
+-   Porcentaje de variabilidad explicada por el modelo.
+
+Observando en el resumen del mejor modelo, el modelo obtuvo una $R^2$ ajustada del $88.8\%$, indicando que el modelo puede explicar este porcentaje de la variabilidad de los datos.
+
+-   Significancia de cada uno de los coeficientes $\beta_i$.
+
+Recordemos que $H_0 :=$ El coeficiente no es significativo ($\beta_i = 0$) y $H_A :=$ El coeficiente si es significativo ($\beta_i \neq 0$).
+Observamos que todos los coeficientes en el mejor modelo tienen un valor de $p < 0.05$, por lo que todos son estadísticamente significativos.
+Esto implica que se rechazan las hipótesis nulas, y se infiere que los términos y sus respectivos coeficientes son significativos al modelo y a los datos.
+
+## Inciso 4.
+
+Valida el modelo.
+Verifica si se satisfacen todos los supuestos del modelo: (Selecciona 2 supuestos)
+
+### Normalidad de los residuos
+
+Shapiro-Wilk normality test
+
+-   $H_0:=$ La distribución de los errores es normal
+
+-   $H_A:=$ La distribución de los errores no es normal
+
+```{r}
+shapiro.test(best_ols$residuals)
+hist(best_ols$residuals)
+qqnorm(best_ols$residuals) 
+qqline(best_ols$residuals)
+```
+
+El valor de $p$ de casi 0 indica que los errores no son parte de una distribución normal.
+Esto muy probablemente se debe al sesgo presente en los datos.
+Este supuesto se rechaza.
+
+### Verificación de media cero
+
+T Test
+
+-   $H_0:=$ La media de los errores es igual a 0.
+
+-   $H_A:=$ La media de los errores no es igual a 0.
+
+```{r}
+t.test(best_ols$residuals) 
+mean(best_ols$residuals)
+```
+
+La prueba de T sugiere que la media de los errores evidentemente es 0, por lo que este supuesto parece ser aprobado.
+
+### Homocedasticidad
+
+Breusch-Pagan
+
+-   $H_0:=$ Los datos tienen homocedasticidad.
+
+-   $H_A:=$ Los datos no tienen homocedasticidad.
+
+```{r}
+bptest(best_ols)   
+plot(best_ols$fitted.values, best_ols$residuals) 
+abline(h=0, col = "red", lwd = 2)
+```
+
+Tanto el gráfico como la prueba de Breusch-Pagan muestran que la varianza de los errores parece no diferir mucho entre valores, por lo que se puede asumir que el supuesto de homocedasticidad se cumple.
+
+### Independencia
+
+Durbin Watson
+
+-   $H_0:=$ No existe autocorrelación en los datos
+
+-   $H_A:=$ Existe autocorrelacion en los datos.
+
+```{r}
+dwtest(best_ols)
+plot(best_ols$residuals)
+abline(h=0, col = "red", lwd = 2)
+```
+
+Con el mismo gráfico, distinta prueba (Durbin-Watson), no se puede observar autocorrelación y la prueba muestra que la evidencia apunta a la misma conclusión.
+
+## Inciso 5.
+
+Presenta el intervalo de confianza para la respuesta media y el intervalo de predicción para la última observación de la base de datos.
+¿Qué significa cada uno de éstos intervalos?
+
+```{r}
+alfa = 0.05 
+# confint(best_ols, level = 1 - alfa)
+
+pred_conf = predict(best_ols, interval = "confidence", level = 1 - alfa)
+tail(data.frame(pred_conf), 1)
+
+pred_pred = predict(best_ols, interval = "prediction", level = 1 - alfa)
+tail(data.frame(pred_pred), 1)
+```
+
+La matriz `pred_conf` contiene el intervalo de confianza de la predicción de los datos.
+Si bien cuando se ajusta un modelo lineal a datos, los coeficientes tienen sus intervalos de confianza.
+Por ende, por variaciones sobre cada uno de estos coeficientes, la prediccion puede variar.
+El intervalo presentado son los limites que esta predicción segun el modelo puede tener.
+
+Por otra parte, `pred_pred` tiene los intervalos de confianza la variabilidad de los datos.
+Se puede interpretar como una franja de valores esperados que formen parte de la regresión.
+A diferencia de la matriz `pred_conf`, se hace énfasis en que este intervalo de confianza no es la certidumbre sobre la predicción, sino la certidumbre de que un dato pertenezca al modelo.
+
+## Inciso 6.
+
+¿Recomendarías algún modelo de regresión lineal (simple o múltiple) para predecir la variable V3 a partir de las otras variables dadas?
+Argumente su respuesta.
+
+Definitivamente no sería ideal hacer un modelo sobre la variable $V_3$, ya que carece de alguna relación con el resto de las variables.
+Se puede observar tanto gráficamente como en la matriz de correlaciones en el inciso 1.
+Es decir, la variable V3 parece ser independiente del resto de las variables.
+
+# Pregunta 2.
+
+```{r}
+dataset_2 = read.csv("data/Placement.csv")
+head(dataset_2, 5)
+```
+
+## Inciso 1.
+
+Divida el conjunto de datos en un conjunto de entrenamiento (80% de las observaciones y de prueba (20% de las observaciones) manteniendo similares proporciones de la variable en cada conjunto de datos y reporte:
+
+```{r}
+target = "status"
+predictor = "degree_p"
+
+filtered_dataset_2 = dataset_2[,c(predictor,target)]
+filtered_dataset_2$status = as.factor(filtered_dataset_2$status)
+train_index = sample(nrow(filtered_dataset_2), 0.8 * nrow(filtered_dataset_2))
+train_dataset_2 = filtered_dataset_2[train_index,]
+test_dataset_2 = filtered_dataset_2[-train_index,]
+```
+
+-   Proporción de la clase negativa y positiva en el conjunto de entrenamiento:
+
+```{r}
+train_dataset_2 %>%
+  group_by(status) %>%
+  summarise(count = n())
+```
+
+-   Proporción de la clase negativa y positiva en el conjunto de prueba:
+
+```{r}
+test_dataset_2 %>%
+  group_by(status) %>%
+  summarise(count = n())
+```
+
+## Inciso 2.
+
+Formule el modelo de regresión logística simple correspondiente y escriba las ecuaciones para:
+
+$$
+\log(\frac{P}{1-P}), P(Status =1)
+$$
+
+```{r}
+log_model = glm(status ~ degree_p, train_dataset_2, family='binomial', )
+
+summary(log_model)
+```
+
+```{r}
+log_model$coefficients
+```
+
+$$
+\log(\frac{P}{1-P}) = 0.190*degree\_p-11.657
+$$
+$$
+P(Status=1) = \frac{1}{1+e^{-(0.190*degree\_p-11.657)}}
+$$
+
+## Inciso 3.
+
+Interprete en el contexto del problema:
+
+-   ¿Es estadísticamente significativa la variable predictora?
+    Justifique.
+
+```{r}
+summary(log_model)
+print("--------------------")
+null_model = glm(status ~ 1, data = train_dataset_2, family = "binomial")
+anova_resultado = anova(null_model, log_model, test = "Chi")
+print(anova_resultado)
+```
+
+La variable predictora ciertamente es significativa, debido a que su coeficiente tiene un valor de $p$ muy cercano al 0.
+Además, al comparar con un modelo nulo con una prueba ANOVA, se observa un valor de $p$ muy cercano a 0, por lo que implica que el modelo con esta variable predictora es mucho más significativo que un modelo nulo.
+
+-   Por por cada unidad que se incrementa el porcentaje de la nota de universidad ¿Cuánto se espera que cambie el logaritmo de *odds* de la variable status?
+
+Se espera que por cada unidad de incremento de la nota, el logaritmo de odds aumenta 0.18984.
+
+## Inciso 4.
+
+Reporte únicamente las predicciones de probabilidades de las primeras 6 observaciones del conjunto de prueba.
+
+```{r}
+# Se voltea porque el modelo tomo los valores al reves
+test_dataset_2$preds = 1 - predict(log_model, newdata = data.frame(degree_p = test_dataset_2$degree_p), type = "response")
+
+head(test_dataset_2, 6)
+```
+
+## Inciso 5.
+
+Encuentre el umbral óptimo de probabilidad para la clasificación de los datos y genere las predicciones de las clases a las que corresponden los datos.
+Reporte únicamente las predicciones de las clases de las primeras 6 observaciones del conjunto de prueba.
+
+```{r}
+test_dataset_2$preds_class = ifelse(test_dataset_2$preds > 0.5, 1, 0)
+
+head(test_dataset_2, 6)
+```
+
+## Inciso 6.
+
+Obtenga la matriz de confusión, identifique:
+
+```{r}
+tabla_contingencia = table(Real = test_dataset_2$status, Predicciones = test_dataset_2$preds_class)
+print(tabla_contingencia)
+```
+
+1.  El número de verdaderos positivos: 9
+2.  El número de falsos positivos: 5
+
+## Inciso 7.
+
+Concluya en el contexto del problema:
+
+```{r}
+tasa_error = sum(diag(tabla_contingencia)) / sum(tabla_contingencia)
+sensibilidad = tabla_contingencia[2, 1] / sum(tabla_contingencia[2, ])
+especificidad = tabla_contingencia[1, 2] / sum(tabla_contingencia[1, ])
+
+cat("Tasa de Error:", tasa_error, "\n")
+cat("Sensibilidad:", sensibilidad, "\n")
+cat("Especificidad:", especificidad, "\n")
+```
+
+1.  El porcentaje de predicciones correctas sobre los datos de prueba es 67.4%
+2.  La tasa de error es: 32.6 %
+3.  Sensibilidad: el modelo clasifica correctamente el 80% de los estudiantes que no son reclutados con un oferta laboral.
+4.  Especificidad: el modelo predice correctamente el 50% de los estudiantes que si son reclutados con una oferta laboral.
+
+# Pregunta 3.
+
+```{r}
+dataset_3 = read.csv("data/mercurio.csv")
+continuous_dataset_3 = dataset_3[,-c(1,2,12)]
+head(dataset_3, 5)
+summary(dataset_3)
+```
+
+## Inciso 1.
+
+Realice un análisis de normalidad de las variables continuas para identificar variables normales por pares y por distribución conjunta (se sugiere utilizar la prueba normalidad de Mardia y con prueba univariada de Anderson Darling).
+Identifique las variables que resultan Normales.
+Interprete su sesgo y curtosis.
+
+```{r}
+mvn_dataset_3 = mvn(data = continuous_dataset_3, mvnTest = "mardia", univariateTest = "AD")
+mvn_dataset_3
+```
+
+Las unicas variables que pasan las pruebas de Anderson-Darling para normalidad univariada son $X_4$ y $X_{10}$.
+En consecuencia, la distribución conjunta tiene valores $p$ muy cercanos a cero tanto para el sesgo como para la curtosis.
+Por ende, la distribución conjunta no es normal.
+
+## Inciso 2.
+
+Indique cuáles son las características de normalidad, sesgo y curtosis de las variables: X6 y X7
+
+```{r}
+mvn_dataset_3$Descriptives[c(4,5),]
+```
+
+$X_6$ tiene sesgo positivo y su curtosis es positiva.
+No se espera normalidad de esta variable debido a su alto sesgo y curtosis.
+Para $X_7$ sucede una situación similar con el sesgo, pero a menor magnitud.
+La curtosis en este caso es negativa, indicando una distribución leptocurtica.
+
+## Inciso 3.
+
+Con las variables significativas identificadas en el inciso A, haz una prueba de normalidad multivariada, ¿resulta significativa esta distribución?
+Describe lejanías ligeras o importantes de sesgo y curtosis.
+
+```{r}
+best_mvn = mvn(data = dataset_3[,c("X4", "X10")], mvnTest = "mardia", univariateTest = "AD")
+best_mvn
+```
+
+Esta distribución es significativa, debido a que la distribución conjunta se aprueba.
+Las respectivas métricas de sesgo y curtosis para las distribuciones univariadas no afectan significativamente la distribucion conjunta.
+
+## Inciso 4.
+
+Elabora las gráficas de contorno de la distribución identificada en el inciso C.
+Interprétalas.
+
+```{r}
+mvn(data = dataset_3[,c("X4", "X10")], mvnTest = "mardia", univariateTest = "AD", multivariatePlot = "contour")
+```
+
+Se puede identificar claramente la media y sus respectivos valores de nivel, con los que se pueden encontrar la proporción de los datos que caen bajo ese contorno.
+
+## Inciso 5.
+
+Con el vector de medias y la matriz de covarianza de la normal multivariada encontrada en el inciso C, obtén la probabilidad acumulada para los valores de la observación 26 (en tu matriz de datos encuentra los valores de las variables que intervienen en tu modelo C y utilizalos para calcular esa probabilidad. La matriz de varianza covarianza y el vector de medias obtenlo de tus datos).
+
+```{r}
+as.vector(dataset_3[26,c("X4", "X10")])
+```
+
+```{r}
+mu = colMeans(dataset_3[,c("X4", "X10")])
+sigma = cov(dataset_3[,c("X4", "X10")])
+bound = c(6.9, 1.12)
+
+# Calcular la probabilidad utilizando la distribución normal multivariada
+p_value = pmnorm(x = bound, mean = mu, varcov = sigma)
+p_value
+```
+
+La probabilidad acumulada sería de 0.329.
+
+## Incisos 6.
+
+Con el total de datos calcula la distancia de Mahalanobis de cada observación al centroide (vector de medias) con respecto a la matriz de covarianzas.
+¿Qué observación está más alejada, según la distancia de Mahalanobis, del centroide?
+¿Qué observación está más cercana?
+
+```{r}
+mu = colMeans(continuous_dataset_3)
+sigma = cov(continuous_dataset_3)
+mahalanobis_dist = mahalanobis(x = continuous_dataset_3, center = mu, cov = sigma)
+
+# Identificar la observación más alejada y la más cercana al centroide
+max_distance_index = which.max(mahalanobis_dist)
+min_distance_index = which.min(mahalanobis_dist)
+
+max_distance_index
+min_distance_index
+```
+
+# Problema 4.
+
+```{r}
+dataset_4 = read.csv("data/recordswomen.csv")
+numeric_dataset_4 = dataset_4[,-1]
+head(dataset_4, 5)
+```
+
+## Inciso 1.
+
+Con base en al menos tres criterios (por ejemplo, porcentaje de variación acumulada, gráfica de Scree y los valores de las cargas ) determinar cuántos componentes son suficientes para explicar razonablemente la mayoría de la variación.
+
+```{r}
+# Análisis de componentes principales
+pca = prcomp(numeric_dataset_4, scale. = TRUE)
+
+# Porcentaje de variación acumulada
+summary(pca)
+
+# Gráfica Scree
+screeplot(pca, type = "lines")
+
+# Valores de las cargas
+pca$rotation
+```
+
+Con la gráfica de Scree, se observa que con dos componentes principales es suficiente.
+La proporción acumulada de varianza sugiere que sea entre 2 y 3 componentes principales, pero para la poca ganancia que se tiene y por simplicidad para la reducción de dimensionalidad, 2 componentes principales es suficiente.
+Se observa para las cargas que despues del segundo componente principal, el poca la aportación de las variables para explicar esa variación.
+Por lo tanto, se refuerza la idea de considerar unicamente 2.
+
+## Inciso 2.
+
+Escribir las combinaciones lineales de los Componentes principales en función de las variables y cargas obtenidas de los componentes principales resultantes.
+
+```{r}
+pca$rotation[,c(1,2)]
+```
+
+## Inciso 3.
+
+Utilizando los dos primeros componentes hacer una gráfica de dispersión de las puntuaciones.
+Comentar el gráfico en función de la variabilidad.
+
+```{r}
+biplot(pca, scale = 0)
+```
+
+Podemos observar mucho mayor variabilidad en el componente principal 1, y no tanta variabilidad en el segundo componente.
+Esto se refleja en las respectivas magnitudes de desviaciones estandar de cada componente.
+
+## Inciso 4.
+
+Hacer un gráfico vectorial de las variables e interpretar sus relaciones.
+
+```{r}
+biplot(pca, scale = 0)
+```
+
+Podemos observar como las variables se dividen principalmente en dos agrupaciones y direcciones, lo cual se refleja en el numero de componentes principales.
+Bien si dos dos direcciones distintas, ambas agrupaciones se relacionan en cuanto a su dirección (hacia los negativos del componente principal 1).
+
+## Inciso 5.
+
+Interprete los resultados de su análisis.
+
+En el contexto de este problema, podemos inferir que las variables de tiempo pueden ser resumidas con dos componentes principales.
+En general se observa que no hay variables influyentes en la variación de los datos.
+Este análisis ha ayudado a reducir de 8 variables de tiempo a 2 combinaciones lineales de estas.
+Por lo tanto, ahora se puede describir cada país con unicamente dos combinaciones lineales.
+
+# Problema 5.
+
+```{r}
+dataset_5 = read.csv("data/recordswomen.csv")
+numeric_dataset_5 = dataset_5[,-1]
+head(dataset_5, 5)
+```
+
+## Inciso 1.
+
+Justifique por qué es adecuado el uso del Análisis factorial (hacer la prueba de esfericidad de Bartlett y KMO).
+
+```{r}
+# Matriz de correlación
+corr.test(numeric_dataset_5)
+
+# Prueba de esfericidad de Bartlett
+check_sphericity_bartlett(numeric_dataset_5)
+
+# Medida de adecuación muestral de Kaiser-Meyer-Olkin (KMO)
+KMO(cor(numeric_dataset_5))
+```
+
+La prueba de esfericidad de Bartlett muestra una $p$ menor a $0.001$, indicando que la relación entre variables es lo suficientemente significativa para un análisis factorial.
+La prueba de KMO respalda estos resultados, teniendo un valor de 0.82 (con valor crítico de 0.5).
+Por ende, se pueden considerar aptos los datos para un análisis factorial.
+
+## Inciso 2.
+
+Justifique el número de factores principales que se utilizarán en el modelo.
+Escriba los factores de los que constará su modelo.
+
+```{r}
+pca = prcomp(numeric_dataset_5)
+# Eigenvalores
+pca$sdev
+# Aportacion acumulada
+cumsum(pca$sdev) / sum(pca$sdev)
+# Combinaciones Lineales
+pca$rotation
+
+
+cor_dataset = cor(numeric_dataset_5)
+scree(numeric_dataset_5)
+```
+
+Al hacer un análisis de componentes principales y revisando en el Scree, se llega a la conclusión de que con dos factores es suficiente para poder explicar los datos.
+Bajo el mismo argumento de la variabilidad acumulada, también se afirma que dos componentes es la mejor opción.
+Las cargas nuevamente confirman esta sospecha.
+En este análisis, la escala ha sido estandarizada y por ende se puede observar la verdadera aportación de cada variable.
+Considerando todo esto, se escogen los primeros dos factores.
+
+```{r}
+pca$rotation[,c(1,2)]
+```
+
+## Inciso 3.
+
+Identifique las comunalidades de los factores del modelo propuesto, y los errores: interprete si se necesita un nuevo factor.
+
+```{r}
+fm_mode = "minres"
+
+fa_none = fa(cor_dataset, nfactors = 2, rotate = "none", fm = fm_mode)
+fa_varimax = fa(cor_dataset, nfactors = 2, rotate = "varimax", fm = fm_mode)
+fa_oblimin = fa(cor_dataset, nfactors = 2, rotate = "oblimin", fm = fm_mode)
+
+fa_none
+```
+
+```{r}
+data.frame(NONE = fa_none$communalities, VARIMAX = fa_varimax$communalities, OBLIMIN = fa_oblimin$communalities)
+cbind(fa_none$residual, fa_varimax$residual, fa_oblimin$residual)
+```
+
+Se observa que con dos factores, el modelo de análisis factorial de tipo MINRES es el que mejor minimiza el RMSE, y revisando las comunalidades, también se observa que tiene un buen ajuste a cada variable.
+Esto indica que los factores explican las variables adecuadamente.
+Igual se puede observar que los residuos son minimos.
+
+## Inciso 4.
+
+Encuentre con ayuda de un gráfico de variables qué conviene más sin rotación o con rotación varimax.
+(se puede ayudar con la función **`fa`** de la librería psych y el gráfico de la función **`fa.diagram`**)
+
+```{r}
+rot = c("none", "varimax", "quartimax", "oblimin")
+bi_mod = function(tipo){
+biplot.psych(fa(numeric_dataset_5, nfactors = 2, fm=fm_mode, rotate = tipo), main = "",col=c(2,3,4),pch = c(21,18))  }
+sapply(rot,bi_mod)
+```
+
+De usar una rotación varimax a no usar una rotación varimax, se observan resultados similares.
+Probando rápidamente con otros tipos de rotación (OBLIMIN) se observa una mejor relación entre factores y mejor explicación de los datos.
+
+## Inciso 5.
+
+Interprete los resultados de su análisis.
+Describa las variables latentes que encontró en el contexto del problema.
+
+```{r}
+fa_oblimin$loadings
+```
+
+En el contexto del problema, se observa que el factor uno esta compuesto de las variables: X4, X5, X6 y X7.
+Por otro lado, el segundo factor está compuesto de X1, X2, X3 y con leves pesos en X4, X6 Y X7.
+El primer factor parece estar compuesto de variables de larga distancia, por lo que se infiere que puede ser un factor de "resistencia".
+Por otro lado, las variables del factor 2 indican mayor influencia para las asociadas con carreras más rapidas, por lo que se puede inferir que el factor 2 puede hacer referencia a "velocidad".
+
+# Problema 6.
+
+```{r}
+dataset_6 = read.csv("data/humedal.csv")
+head(dataset_6, 5)
+```
+
+## Inciso 1.
+
+Realiza dos análisis clouster jerárquicos usando dos distintas distancias y métodos de aglomeración.
+Sigue los siguientes puntos para cada uno de ellos:
+
+-   Realiza el dendograma y selecciona el número de grupos óptimo (k).
+    Ensaya diversos métodos de aglomeración hasta encontrar el óptimo.
+    Reporta solo los dos que consideres que agruparon mejor a las variables.
+
+```{r}
+groups = 4
+
+# Cálculo de la matriz de distancias
+dist_euc <- dist(dataset_6[, -1], method = "euclidean")
+
+jerarquico1 <- hclust(dist_euc, method = "average")
+
+# Dendograma
+plot(jerarquico1, main = "Dendograma (Distancia Euclidiana, Complete)")
+
+# Seleccionar número óptimo de grupos y colorear el dendograma
+rect.hclust(jerarquico1, k = groups, border = "red")
+
+# Asignación de grupos a cada observación
+grupo1 <- cutree(jerarquico1, k = groups)
+
+# Resultado: combinación de iris con el grupo asignado
+resultado1 <- cbind(dataset_6, Grupo = grupo1)
+
+resultado1
+
+# Contar observaciones mal clasificadas
+table(resultado1$humedal, resultado1$Grupo)
+
+# Calcular medias por grupo de clasificación
+aggregate(. ~ Grupo, data = resultado1[, -1], FUN = mean)
+```
+
+```{r}
+groups = 4
+
+# Cálculo de la matriz de distancias
+dist_euc <- dist(dataset_6[, -1], method = "euclidean")
+
+jerarquico1 <- hclust(dist_euc, method = "complete")
+
+# Dendograma
+plot(jerarquico1, main = "Dendograma (Distancia Euclidiana, Complete)")
+
+# Seleccionar número óptimo de grupos y colorear el dendograma
+rect.hclust(jerarquico1, k = groups, border = "red")
+
+# Asignación de grupos a cada observación
+grupo1 <- cutree(jerarquico1, k = groups)
+
+# Resultado: combinación de iris con el grupo asignado
+resultado1 <- cbind(dataset_6, Grupo = grupo1)
+
+resultado1
+
+# Contar observaciones mal clasificadas
+table(resultado1$humedal, resultado1$Grupo)
+
+# Calcular medias por grupo de clasificación
+aggregate(. ~ Grupo, data = resultado1[, -1], FUN = mean)
+```
+
+Ambos dendogramas parecen tener una mejor agrupación de "4", bien si enrealidad el ideal sería 3.
+Ambos batallan con el registro numero 2, posiblemente al ser un dato atipico que al considerar con algoritmos de clustering lo separa como su propia agrupacion por su drástica diferencia.
+El segundo parece agrupar mejor, ya que las divisiones entre agrupaciones son más marcadas.
+Esto se debe a que el complete linkage divide segun la maxima distancia que se tenga entre grupos.
+
+## Inciso 2.
+
+Hacer el gráfico de agromeración no-jerárquica con el método de k-medias.
+
+```{r}
+# Análisis de K-means con k=3
+kmeans_result <- kmeans(dataset_6[, -1], centers = 3)
+
+# Asignar las observaciones a los grupos formados por K-means
+dataset_6$KMeans_Grupo <- kmeans_result$cluster
+
+# Gráfico de los grupos formados por K-means
+pairs(dataset_6[, -1], col = kmeans_result$cluster, main = "Grupos formados por K-means")
+
+# Contar las observaciones mal clasificadas
+table(dataset_6$humedal, dataset_6$KMeans_Grupo)
+
+aggregate(. ~ KMeans_Grupo, data = dataset_6[, -1], FUN = mean)
+```
+
+Con este método es mucho más complicado obtener conglomeraciones signficativas.
+Observamos que no siempre es claro los criterios de divisiones para este algoritmo.
+Parece ser que al utilizar 3 centros, se puede observar mejor los distintos grupos al verlo como proyecciones entre variables.
+
+## Inciso 3.
+
+¿Cuál de los los métodos que ensayaste resultó mejor para clasificar las características de los humedales?
+¿Es posible identificar las características que los agrupan?
+
+El primer método muestra mejores resultados, especialmente al utilizar la jerarquía se puede hacer mayor distinción entre registros y clasificarlos mejor entre categorías.
+Si bien es posible llegar a conclusiones detrás de las agrupaciones, es complicado debido al registro influyente.

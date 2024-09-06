@@ -22,8 +22,6 @@ dataset = read.csv("../data/cars93.csv")
 head(dataset, 5)
 ```
 
-
-
 ```{r}
 dataset_limpio = na.omit(dataset)
 dataset_limpio = dataset_limpio[,c(-8, -9)]
@@ -38,13 +36,14 @@ result$multivariateNormality
 result$univariateNormality
 ```
 
-La información definitivamente no corresponde a una normal multivariada. Al hace la prueba conjunta, el sesgo y curtosis de la información no corresponde a lo esperado de una Normal Multivariada. Así mismo, al hacer las pruebas univariadas, ninguna fue aceptada como una distribución normal. Por ende, se puede decir con confianza que los datos no corresponden a una normal multivariada. 
+La información definitivamente no corresponde a una normal multivariada. Al hace la prueba conjunta, el sesgo y curtosis de la información no corresponde a lo esperado de una Normal Multivariada. Así mismo, al hacer las pruebas univariadas, ninguna fue aceptada como una distribución normal. Por ende, se puede decir con confianza que los datos no corresponden a una normal multivariada.
 
 # Revisión de correlación entre variables
 
 ```{r}
 corr.test(dataset_limpio)
 ```
+
 Todas las variables pasan las prubeas de hipotesis en cuanto a la significancia de sus respectivas correlaciones, por lo que se infiere que todas las correlaciones son significativas.
 
 ```{r}
@@ -63,6 +62,7 @@ Con la prueba de Bartlett, tambien se confirma que hay suficiente correlación e
 K = KMO(cor(dataset_limpio))
 cat("El valor del estadístico es: ", K$MSA)
 ```
+
 Los datos también son aptos para una análisis factorial segun la prueba de KMO, donde el punto crítico es de 0.5 para aceptarse. Es considerado "Meritorio".
 
 # Análisis de Componentes Principales
@@ -74,10 +74,13 @@ pca$sdev
 cumsum(pca$sdev) / sum(pca$sdev)
 pca$rotation
 ```
-Observamos que cuando se hace escalamiento de los datos, dos componentes principales son suficientes para representar una gran mayoría de la varianza de los datos. PC1 resume la información de V5 principalmente, mientras que PC2 resume V3, y V4. 
+
+Observamos que cuando se hace escalamiento de los datos, dos componentes principales son suficientes para representar una gran mayoría de la varianza de los datos. PC1 resume la información de V5 principalmente, mientras que PC2 resume V3, y V4.
+
 ```{r}
 scree(cor(dataset_limpio))
 ```
+
 Según el gráfico, es evidente que no es necesario más de 2 componentes principales ni 2 factores para explicar la información. Más adelante se fijará la busqueda del mejor análisis factorial en 2 factores.
 
 # Análisis Factorial
@@ -99,12 +102,14 @@ mr2
 ```{r}
 data.frame(NONE=fa_minres$valid, VARIMAX=fa_minres_varimax$valid, OBLIMIN=fa_minres_oblimin$valid)
 ```
+
 Según el criterio de valid de la funcion fa, el análisis factorial hecho con rotación oblimin es la que mejor discrimina las cargas entre factores. Hace sentido utilizar una rotación oblimin debido a que esperamos que los factores puedan estar correlacionados.
 
 ```{r}
 fa_minres_oblimin$loadings
 fa_minres_oblimin
 ```
+
 $V_1 - \mu= -0.727 * MR_1 + 0.278 * MR_2$
 
 $V_2 - \mu= 0.956 * MR_1$
@@ -119,10 +124,8 @@ $V_6- \mu = -0.522 * MR_1$
 
 $V_7- \mu = 0.996 * MR_2$
 
-El factor 1 puede estar asociado con el rendimiento del vehiculo. Las variables V2 - V5 muestran variables que son asociadas a la potencia de un vehiculo. La variable V1, altas millas por galón, implicaría eficiencia lo cual normalmente es el caso contrario para alta potencia. Por otro lado, el factor 2 está vinculado con las variables 1 y 7, por lo cual probablemente esté explicando el avance tecnológico con los años. Esta idea se respalda con la alta carga para la variable del año del carro. 
-
+El factor 1 puede estar asociado con el rendimiento del vehiculo. Las variables V2 - V5 muestran variables que son asociadas a la potencia de un vehiculo. La variable V1, altas millas por galón, implicaría eficiencia lo cual normalmente es el caso contrario para alta potencia. Por otro lado, el factor 2 está vinculado con las variables 1 y 7, por lo cual probablemente esté explicando el avance tecnológico con los años. Esta idea se respalda con la alta carga para la variable del año del carro.
 
 # Conclusiones
-
 
 En el análisis factorial realizado sobre los datos de vehículos, se encontró que los datos no siguen una distribución normal multivariada. Sin embargo, la correlación significativa entre las variables y las pruebas de adecuación, como la prueba de Bartlett y el índice KMO, respaldan el por qué para el análisis factorial. El análisis de componentes principales reveló que dos componentes principales explican el 97.2% de la varianza, lo que indica que una reducción a dos componentes es suficiente para representar la información. El análisis factorial con rotación Oblimin identificó dos factores: el primero asociado con el rendimiento del vehículo y el segundo con el avance tecnológico, como lo reflejan las variables relacionadas con el año del modelo del carro. Estos resultados sugieren que, a pesar de las desviaciones de la normalidad, el análisis factorial proporciona una visión clara de los atributos en el conjunto de datos de vehículos. El Análisis de Componentes Principalesn busca reducir la dimensionalidad del conjunto de datos preservando la mayor varianza posible, mientras que el Análisis Factorial identifica factores que explican las correlaciones entre las variables observadas. El análisis exploratorio factorial busca descubrir estructuras teóricas y utiliza rotaciones para interpretar los factores.

@@ -11,6 +11,10 @@ library(matlib)
 library(mnormt)
 library(MVN)
 library(ggplot2)
+library(psych)
+library(performance)
+library(GPArotation)
+library(datasets)
 ```
 
 # Ejercicio 1.
@@ -91,6 +95,313 @@ ggplot(qqplot_data, aes(sample = Sample, theoretical = Theoretical)) +
        x = "Theoretical Quantiles (Chi-square)",
        y = "Sample Quantiles (Mahalanobis Distance)") +
   theme_minimal()
-
-mvn(dataset)
 ```
+
+# Ejercicio 4.
+
+A los datos numéricos del problema 3 plantee las hipótesis de la Prueba de normalidad.
+
+$H_0 :=$ La distribución de las variables conjuntas es una normal multivariada.
+
+$H_A :=$ La distribución de las variables conjuntas NO es una normal multivariada.
+
+```{r}
+mvn_mardia = mvn(dataset, mvnTest = "mardia")
+mvn_hz = mvn(dataset, mvnTest = "hz")
+
+p_mardia = mvn_mardia$multivariateNormality$`p value`
+p_hz = mvn_hz$multivariateNormality$`p value`
+
+# ¿Cuál es el valor p de correspondientes a los Test de sesgo y curtosis de la Prueba de normalidad multivariada de Mardia?
+print(paste("P-Value Sesgo Mardia:", p_mardia[1]))
+print(paste("P-Value Curtosis Mardia:", p_mardia[2]))
+
+# ¿Cual es el valor p de la prueba de normalidad multivaridad de Henze-Zirkler's?
+print(paste("P-Value HZ:", p_hz))
+```
+
+A un alfa = 0.05, ¿qué se concluye?
+
+Para todas las pruebas, no se tiene suficiente evidencia estadística para rechazar la hipótesis nula, por lo que se infiere que el sesgo y curtosis son correspondientes a una distribución normal multivariada. Respaldado por la prueba de normalidad de Henze-Zirkler's, se confirma que efectivamente la distribución conjunta de los datos parece pertenecer a una distribución normal multivariada. Esto también se puede observar en la gráfica de "QQ Plot" Multivariada hecha en el ejercicio 3.
+
+# Ejercicio 5.
+
+El Departamento de Industria Primaria Pesca de Tasmania (Australia) hace un estudio sobre algunas características básicas del pez Olmo.
+
+```{r}
+dataset = read.csv("data/olmos.csv")
+X = dataset[,c("Longitud", "Diametro", "Altura")]
+head(dataset, 3)
+```
+
+Realice un análisis de normalidad de las variables continuas para identificar variables normales:
+
+1\. Realice la prueba de normalidad de Mardia y la prueba de Anderson Darling con las variables $X1, X2$ y $X3$ y de la conclusión a un nivel se significación de 0.05. Interprete coeficientes de sesgo y curtosis de Mardia resultantes. Indique qué variables resultaron leptocúrticas, platicúrticas y mesocúrticas.
+
+```{r}
+mvn_dataset = mvn(data = X, mvnTest = "mardia", univariateTest = "AD")
+
+mvn_dataset
+```
+
+2\. Elabore la gráfica de contorno de la normal multivariada obtenida anteriormente. 
+
+```{r}
+# mvn(X, mvnTest = "mardia", multivariatePlot = "contour")
+```
+
+3\. Con el vector de medias y la matriz de covarianza de la normal multivariada en en el inciso A, calcule la probabilidad de que $P(X ≤ (0.25, 0.25, 0.25) )$
+
+```{r}
+# Vector de medias y matriz de covarianza
+mu = colMeans(X)
+sigma = cov(X)
+bound = c(0.25, 0.25, 0.25)
+
+# Calcular la probabilidad utilizando la distribución normal multivariada
+p_value = pmnorm(x = bound, mean = mu, varcov = sigma)
+p_value
+```
+
+4\. Con el total de datos Olmos.csv calcula la distancia de Mahalanobis de cada observación al centroide (vector de medias) con respecto a la matriz de covarianzas. ¿Qué observación está más alejada, según la distancia de Mahalanobis, del centroide?  ¿Qué observación está más cercana?
+
+```{r}
+# Distancia de Mahalanobis
+mahalanobis_distances <- mahalanobis(X, center = mu, cov = sigma)
+
+# Identificar la observación más alejada y la más cercana al centroide
+max_distance_index <- which.max(mahalanobis_distances)
+min_distance_index <- which.min(mahalanobis_distances)
+
+max_distance_index
+min_distance_index
+
+```
+
+5\. Aplica un análisis de componentes principales a los datos y con base en al menos tres criterios (por ejemplo, porcentaje de variación acumulada, gráfica de Scree y los valores de las cargas ) determinar cuántos componentes son suficientes para explicar razonablemente la mayoría de la variación.
+
+```{r}
+# Análisis de componentes principales
+pca <- prcomp(dataset, scale. = TRUE)
+
+# Porcentaje de variación acumulada
+summary(pca)
+
+# Gráfica Scree
+screeplot(pca, type = "lines")
+
+# Valores de las cargas
+pca$rotation
+```
+
+6\. Escribir las combinaciones lineales de los Componentes principales en función de las variables y cargas obtenidas de los componentes principales resultantes.
+
+```{r}
+pca$rotation[,c(1,2)]
+```
+
+7\. Utilizando los dos primeros componentes hacer una gráfica de dispersión de las puntuaciones. Comentar el gráfico en función de la variabilidad.
+
+```{r}
+# Obtener puntuaciones de los dos primeros componentes
+scores <- pca$x[, 1:2]
+
+# Gráfico de dispersión
+plot(scores, xlab = "Componente Principal 1", ylab = "Componente Principal 2", main = "Gráfico de Dispersión de los dos primeros Componentes")
+```
+
+8\. Hacer un gráfico vectorial de las variables e interpretar sus relaciones.
+
+```{r}
+# Gráfico biplot
+biplot(pca, scale = 0)
+```
+
+# Ejercicio 6.
+
+Con los mismos datos y contexto del problema anterior, realice un análisis factorial: 
+
+-   Justifique por qué es adecuado el uso del Análisis factorial (hacer la prueba de esfericidad de Bartlett y KMO).
+
+```{r}
+# Matriz de correlación
+corr.test(dataset)
+
+# Prueba de esfericidad de Bartlett
+check_sphericity_bartlett(dataset)
+
+# Medida de adecuación muestral de Kaiser-Meyer-Olkin (KMO)
+KMO(cor(dataset))
+```
+
+-   Justifique el número de factores principales que se utilizarán en el modelo.
+
+```{r}
+pca = prcomp(dataset)
+# Eigenvalores
+pca$sdev
+# Aportacion acumulada
+cumsum(pca$sdev) / sum(pca$sdev)
+# Combinaciones Lineales
+pca$rotation
+
+
+cor_dataset = cor(dataset)
+scree(cor_dataset)
+```
+
+-   Identifique las comunalidades de los factores del modelo propuesto, y los errores: interprete si se necesita un nuevo factor.
+
+```{r}
+fm_mode = "mle" # minres
+
+fa = fa(cor_dataset, nfactors = 2, rotate = "none", fm = fm_mode)
+fa_varimax = fa(cor_dataset, nfactors = 2, rotate = "varimax", fm = fm_mode)
+fa_oblimin = fa(cor_dataset, nfactors = 2, rotate = "oblimin", fm = fm_mode)
+```
+
+```{r}
+data.frame(NONE = fa$communalities, VARIMAX = fa_varimax$communalities, OBLIMIN = fa_oblimin$communalities)
+cbind(fa$residual, fa_varimax$residual, fa_oblimin$residual)
+```
+
+```{r}
+mr1 = data.frame(MR1_NONE = fa$loadings[,1], MR1_VARIMAX = fa_varimax$loadings[,1], MR1_OBLIMIN = fa_oblimin$loadings[,1])
+
+mr2 = data.frame(MR2_NONE = fa$loadings[,2], MR2_VARIMAX = fa_varimax$loadings[,2], MR1_OBLIMIN = fa_oblimin$loadings[,2])
+
+mr1
+mr2
+```
+
+```{r}
+fa_oblimin
+```
+
+-   Encuentre con ayuda de un gráfico de variables qué conviene más sin rotación o con rotación varimax. (se puede ayudar con la función fa de la librería psych y el gráfico de la función fa.diagram)
+
+```{r}
+rot = c("none", "varimax", "quartimax", "oblimin")
+bi_mod = function(tipo){
+biplot.psych(fa(dataset, nfactors = 2, fm=fm_mode, rotate = tipo), main = "",col=c(2,3,4),pch = c(21,18))  }
+sapply(rot,bi_mod)
+```
+
+-   ¿Tienen interpretación en el contexto del problema los factores encontrados?
+
+# Ejercicio 7.
+
+La base de datos *iris* en R almacena datos de las características de 3 especies de Lilis: Setosa, Versicolor y Virginica. Realiza un análisis Clouster para determinar qué tan bien están clasificadas las flores en su especie. Haz un análisis de la siguiente forma:
+
+```{r}
+data(iris)
+head(iris,3)
+```
+
+-   Haz un leve análisis descriptivo para cada variable por especie: media, desviación estándar, diagramas de caja y bigote
+
+```{r}
+summary_stats <- aggregate(. ~ Species, data = iris, FUN = function(x) c(mean = mean(x), sd = sd(x)))
+
+summary_stats
+
+# Diagramas de caja y bigote por variable y especie
+boxplot(Sepal.Length ~ Species, data = iris, main = "Sepal Length", ylab = "Length (cm)")
+boxplot(Sepal.Width ~ Species, data = iris, main = "Sepal Width", ylab = "Width (cm)")
+boxplot(Petal.Length ~ Species, data = iris, main = "Petal Length", ylab = "Length (cm)")
+boxplot(Petal.Width ~ Species, data = iris, main = "Petal Width", ylab = "Width (cm)")
+```
+
+-   Realiza dos análisis clouster jerárquicos usando dos distintas distancias y métodos de aglomeración. Sigue los siguientes puntos para cada uno de ellos:
+
+    -   Realiza el dendograma y selecciona el número de grupos óptimo (k). Utiliza *rect.hclust*(jerarquico, *k* = número de grupos, *border*="color"). 
+
+    -   Visualiza las distancias entre los grupos que decidiste formar (te puede ayudar: jerarquico\$height del comando hclust)
+
+    -   Identifica el grupo en que fue clasificada cada observación de la base de datos.
+
+        -   grupo = *cutree*(jerarquico, *k=*número de grupos)\
+            Resultado = *cbind*(Iris, grupo)
+
+    -   Cuenta el número de observaciones mal clasificadas (puedes hacerlo con el comando *table*)
+
+    -   Calcula la media para cada grupo de clasificación por el método y comparalas con las obtenidas en el análisis descriptivo.
+
+    -   Interpreta el dendograma obtenido y concluye para los dos métodos. Indica cuál es mejor y por qué.
+
+```{r}
+groups = 3
+
+# Cálculo de la matriz de distancias
+dist_euc <- dist(iris[, -5], method = "euclidean")
+
+# Clúster jerárquico usando el método "complete"
+jerarquico1 <- hclust(dist_euc, method = "complete")
+
+# Dendograma
+plot(jerarquico1, main = "Dendograma (Distancia Euclidiana, Complete)")
+
+# Seleccionar número óptimo de grupos y colorear el dendograma
+rect.hclust(jerarquico1, k = groups, border = "red")
+
+# Asignación de grupos a cada observación
+grupo1 <- cutree(jerarquico1, k = groups)
+
+# Resultado: combinación de iris con el grupo asignado
+resultado1 <- cbind(iris, Grupo = grupo1)
+
+# Contar observaciones mal clasificadas
+table(resultado1$Species, resultado1$Grupo)
+
+# Calcular medias por grupo de clasificación
+aggregate(. ~ Grupo, data = resultado1[, -5], FUN = mean)
+
+```
+
+```{r}
+groups = 3
+
+# Clustering jerárquico usando la distancia Manhattan y el método de enlace promedio (average linkage)
+dist_manhattan <- dist(iris[, -5], method = "manhattan")
+jerarquico2 <- hclust(dist_manhattan, method = "average")
+
+# Dendograma y selección del número óptimo de grupos
+plot(jerarquico2, main = "Dendograma - Método Average Linkage")
+rect.hclust(jerarquico2, k = groups, border = "blue")
+
+# Asignar las observaciones a los grupos
+grupos2 <- cutree(jerarquico2, k = groups)
+resultado2 <- cbind(iris, Grupo = grupos2)
+
+# Contar las observaciones mal clasificadas
+table(iris$Species, grupos2)
+
+aggregate(. ~ Grupo, data = resultado2[, -5], FUN = mean)
+```
+
+-   Hacer el gráfico de agromeración no-jerárquica con el método de k-medias para las especies de Iris.
+
+    -   Grafica el diagrama de aglomeración ideal
+
+    -   Cuenta el número de observaciones mal clasificadas
+
+    -   Calcula las medias para los grupos formados y comparalas con las obtenidas en el análisis descriptivo.
+
+    -   Interpreta el resultado obtenido y concluye
+
+```{r}
+# Análisis de K-means con k=3
+set.seed(123)
+kmeans_result <- kmeans(iris[, -5], centers = 3)
+
+# Asignar las observaciones a los grupos formados por K-means
+iris$KMeans_Grupo <- kmeans_result$cluster
+
+# Gráfico de los grupos formados por K-means
+pairs(iris[, -5], col = kmeans_result$cluster, main = "Grupos formados por K-means")
+
+# Contar las observaciones mal clasificadas
+table(iris$Species, iris$KMeans_Grupo)
+```
+
+-   ¿Cuál de los dos métodos resultó mejor para la clasificación de acuerdo a la clasificacion de cada observación en las especies y en los grupos.
